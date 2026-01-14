@@ -27,11 +27,7 @@ league_data = {
     },
     "Champions League": {
         "link": "https://www.espn.in/football/teams/_/league/uefa.champions",
-        "teams": ["Real Madrid", "Manchester City", "Bayern Munich", "Arsenal", "Barcelona", "Inter Milan", "Liverpool", "PSG", "Atletico Madrid", "Dortmund", "AC Milan"]
-    },
-    "La Liga": {
-        "link": "https://www.espn.in/football/teams/_/league/ESP.1/spanish-laliga",
-        "teams": ["Alaves", "Athletic Club", "Atletico Madrid", "Barcelona", "Celta Vigo", "Espanyol", "Getafe", "Girona", "Real Madrid", "Real Sociedad", "Sevilla", "Valencia", "Villarreal"]
+        "teams": ["Real Madrid", "Manchester City", "Bayern Munich", "Arsenal", "Barcelona", "Inter Milan", "Liverpool", "PSG", "Bayer Leverkusen", "Atletico Madrid", "Dortmund", "AC Milan"]
     }
 }
 
@@ -50,33 +46,29 @@ with col1:
 with col2:
     away_team = st.selectbox("🚀 Away Team", league_data[sel_league]["teams"], index=1)
 
-# --- 4. PREDICTION LOGIC (FIXED) ---
+# --- 4. PREDICTION LOGIC (GEMINI 3 FLASH) ---
 if st.button("Generate Verified Live Analysis"):
-    # API Key ရှိမရှိကို ခလုတ်နှိပ်မှ စစ်ဆေးခြင်း (ပိုမိုသေချာစေရန်)
     if "GEMINI_API_KEY" not in st.secrets:
-        st.error("Error: Secrets ထဲမှာ GEMINI_API_KEY ကို ရှာမတွေ့ပါ။")
+        st.error("Error: Secrets ထဲမှာ API KEY မတွေ့ပါ။")
     else:
         try:
-            # AI ကို ချက်ချင်း Configure လုပ်ပြီး ခေါ်ယူခြင်း
             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-            model = genai.GenerativeModel(
-                model_name='gemini-3-flash-preview',
-                tools=[{'google_search': {}}]
-            )
             
-            with st.spinner('AI က Website များမှ နောက်ဆုံး ၅ ပွဲရလဒ်များကို စစ်ဆေးနေပါသည်...'):
+            # လက်ရှိ ၂၀၂၆ ခုနှစ်အတွက် Gemini 3 Flash (Preview) ကို အသုံးပြုထားသည်
+            model = genai.GenerativeModel('gemini-3-flash-preview')
+
+            with st.spinner('AI က Web Data များကို ရှာဖွေစစ်ဆေးနေပါသည်...'):
                 prompt = f"""
-                Verify data from {league_data[sel_league]['link']}, LiveScore.com, and Goal.com.
-                Match: {home_team} vs {away_team}
-                League: {sel_league}
-                Date: {sel_date}
-
-                Task:
-                1. Provide the REAL results of the LAST 5 MATCHES for both teams.
-                2. Analyze tactical matchup based on current form.
-                3. Prediction: Score, O/U 2.5, Corners, BTTS, Yellow Cards.
-
-                Answer in Burmese with emojis. Ensure 100% accuracy from live sources.
+                Professional Audit Request (Current Date: {sel_date}):
+                Please analyze the match: {home_team} vs {away_team} in {sel_league}.
+                
+                Mandatory Tasks:
+                1. Find the REAL last 5 match results for both teams from sources like ESPN, LiveScore, or Goal.com.
+                2. Check latest player injuries and tactical updates for the 2025-26 season.
+                3. Provide prediction: Correct Score, O/U 2.5, Corners, BTTS, and Yellow Cards.
+                
+                Answer in Burmese language with professional football emojis. 
+                Focus on accuracy based on live web information.
                 """
                 
                 response = model.generate_content(prompt)
@@ -86,6 +78,6 @@ if st.button("Generate Verified Live Analysis"):
                 st.write(response.text)
                 
         except Exception as e:
-            st.error(f"AI ချိတ်ဆက်မှု Error တက်သွားပါသည်: {str(e)}")
+            st.error(f"AI Connection Error: {str(e)}")
 
-st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.1 - Enhanced Connection Stability | Gemini 3</p>", unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.4 - Gemini 3 Flash Preview | Live Web Analysis</p>", unsafe_allow_html=True)
