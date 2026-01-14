@@ -3,7 +3,7 @@ import google.generativeai as genai
 import datetime
 
 # --- 1. UI DESIGN ---
-st.set_page_config(page_title="AI Match Analyst Pro", layout="centered")
+st.set_page_config(page_title="AI Tactical Match Finder", layout="centered")
 
 st.markdown("""
     <style>
@@ -17,26 +17,26 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("⚽ Live Data Match Analyst")
+st.title("⚽ AI Match Analysis (Ultra Search)")
 
-# --- 2. LEAGUE DATA (OFFICIAL ESPN LINKS) ---
+# --- 2. LEAGUE DATA ---
 league_data = {
     "Premier League": {
-        "link": "https://www.espn.in/football/teams/_/league/ENG.1/english-premier-league",
+        "links": ["https://www.livescore.com/en/football/england/premier-league/", "https://www.espn.in/football/fixtures/_/league/eng.1"],
         "teams": ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton And Hove Albion", "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham", "Leeds United", "Liverpool", "Manchester City", "Manchester United", "Newcastle United", "Nottingham Forest", "Sunderland", "Tottenham Hotspur", "West Ham United", "Wolves"]
     },
     "Champions League": {
-        "link": "https://www.espn.in/football/teams/_/league/uefa.champions",
-        "teams": ["Real Madrid", "Manchester City", "Bayern Munich", "Arsenal", "Barcelona", "Inter Milan", "Liverpool", "PSG", "Bayer Leverkusen", "Atletico Madrid", "Dortmund", "AC Milan"]
+        "links": ["https://www.livescore.com/en/football/uefa-champions-league/", "https://www.espn.in/football/fixtures/_/league/uefa.champions"],
+        "teams": ["Real Madrid", "Manchester City", "Bayern Munich", "Arsenal", "Barcelona", "Inter Milan", "Liverpool", "PSG", "Atletico Madrid", "Dortmund", "AC Milan"]
     }
 }
 
-# --- 3. INPUT SELECTION ---
+# --- 3. INPUT ---
 c_l, c_d = st.columns(2)
 with c_l:
     sel_league = st.selectbox("Select League", list(league_data.keys()))
 with c_d:
-    sel_date = st.date_input("Select Match Date", datetime.date.today())
+    sel_date = st.date_input("Match Date", datetime.date.today())
 
 st.write("---")
 
@@ -46,8 +46,8 @@ with col1:
 with col2:
     away_team = st.selectbox("🚀 Away Team", league_data[sel_league]["teams"], index=1)
 
-# --- 4. PREDICTION LOGIC (WITH MATCH VERIFICATION) ---
-if st.button("Generate Verified Live Analysis"):
+# --- 4. DEEP SEARCH LOGIC ---
+if st.button("Deep Search & Analyze"):
     if "GEMINI_API_KEY" not in st.secrets:
         st.error("Error: Secrets ထဲမှာ API KEY မတွေ့ပါ။")
     else:
@@ -55,31 +55,33 @@ if st.button("Generate Verified Live Analysis"):
             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
             model = genai.GenerativeModel('gemini-3-flash-preview')
 
-            with st.spinner('ပထမဦးစွာ သတ်မှတ်ရက်စွဲတွင် ပွဲစဉ်ရှိမရှိ စစ်ဆေးနေပါသည်...'):
-                # AI ကို အရင်ဆုံး ပွဲရှိမရှိ စစ်ခိုင်းသည့် Prompt
+            with st.spinner(f'AI က {sel_date} အတွက် ပွဲစဉ်များကို Website အသီးသီးတွင် အပြင်းအထန် ရှာဖွေနေပါသည်...'):
+                # AI ကို ပိုမိုတိကျစွာ ရှာခိုင်းသည့် prompt
                 prompt = f"""
-                Professional Audit Task (Today is {datetime.date.today()}, checking for {sel_date}):
+                CRITICAL TASK: Verify if {home_team} vs {away_team} exists on {sel_date} in {sel_league}.
                 
-                Step 1: Use Google Search to check the official 2025-26 fixture list for {sel_league}.
-                Step 2: Does {home_team} play against {away_team} on the date {sel_date}?
+                Instructions:
+                1. Search Google with keywords: "{home_team} vs {away_team} {sel_date} fixtures".
+                2. Check multiple sports sites: ESPN, LiveScore, BBC Sport, and Sky Sports.
+                3. Today is {datetime.date.today()}.
                 
-                IF NO MATCH EXISTS: 
-                Simply reply in Burmese that "ဒီနေ့မှာ {home_team} နဲ့ {away_team} တို့ရဲ့ ပွဲစဉ်မရှိပါဘူး။" and list the next upcoming match date for them.
+                Validation:
+                - If the match is postponed, cancelled, or doesn't exist on {sel_date}, clearly explain WHY.
+                - If the match exists, provide:
+                    a) Confirmed Kick-off Time.
+                    b) Recent 5 matches results for both (Audited).
+                    c) Tactical analysis & Score Prediction.
                 
-                IF MATCH EXISTS:
-                1. Provide the REAL last 5 results (W/D/L) for both.
-                2. Analyze injuries and Head-to-Head.
-                3. Prediction: Score, O/U 2.5, Corners, BTTS, Yellow Cards.
-                
-                Language: Burmese with emojis. Accuracy is the top priority.
+                Language: Burmese with emojis. 
+                Don't say "not found" unless you have checked at least 3 sources.
                 """
                 
                 response = model.generate_content(prompt)
-                st.success("စစ်ဆေးမှု ပြီးဆုံးပါပြီ!")
+                st.success("ရှာဖွေမှု အောင်မြင်ပါသည်!")
                 st.markdown("---")
                 st.write(response.text)
                 
         except Exception as e:
-            st.error(f"AI Connection Error: {str(e)}")
+            st.error(f"Search Error: {str(e)}")
 
-st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.5 - Match Verification Mode | Powered by Gemini 3</p>", unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.6 - Deep Search Mode | Gemini 3 Flash</p>", unsafe_allow_html=True)
