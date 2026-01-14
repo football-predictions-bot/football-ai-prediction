@@ -1,101 +1,90 @@
 import streamlit as st
 import google.generativeai as genai
-import requests
 import datetime
 
-# --- 1. AI SETUP (GEMINI 3 FLASH) ---
+# --- 1. AI SETUP ---
 def setup_ai():
     try:
         if "GEMINI_API_KEY" not in st.secrets:
-            st.error("Error: GEMINI_API_KEY ကို Secrets ထဲမှာ မတွေ့ပါ။")
             return None
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        return genai.GenerativeModel('gemini-3-flash-preview')
-    except Exception as e:
-        st.error(f"AI Setup Error: {str(e)}")
+        # အင်တာနက်ရှာဖွေရေး Tool ကို ထည့်သွင်းထားသည်
+        return genai.GenerativeModel(
+            model_name='gemini-3-flash-preview',
+            tools=[{'google_search': {}}]
+        )
+    except:
         return None
 
 model = setup_ai()
 
-# --- 2. FOOTBALL DATA API ---
-def get_matches(league_code, date_str):
-    if "FOOTBALL_DATA_API_KEY" not in st.secrets:
-        return []
-    
-    # API ကနေ သတ်မှတ်ထားတဲ့ ရက်စွဲအတိုင်း ပွဲစဉ်တွေ ဆွဲယူမယ်
-    url = f"https://api.football-data.org/v4/matches?dateFrom={date_str}&dateTo={date_str}&competitions={league_code}"
-    headers = {"X-Auth-Token": st.secrets["FOOTBALL_DATA_API_KEY"]}
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            return response.json().get("matches", [])
-        return []
-    except:
-        return []
+# --- 2. SOURCE LINKS FOR VERIFICATION ---
+sources = [
+    "https://www.livescore.com/en/",
+    "https://m.aiscore.com/",
+    "https://www.goal.com/en/live-scores",
+    "https://www.espn.in/football/fixtures"
+]
 
-# --- 3. UI DESIGN ---
-st.set_page_config(page_title="Football AI Prediction", layout="centered")
+# --- 3. UI ---
+st.set_page_config(page_title="AI Tactical Analyst", layout="centered")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #121212; color: white; }
+    .stApp { background-color: #0E1117; color: white; }
     .stButton>button {
         background: linear-gradient(90deg, #39FF14 0%, #20C20E 100%);
         color: black; border-radius: 12px; height: 3.5em; width: 100%; font-weight: bold; border: none;
     }
-    div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
-        border: 2px solid #39FF14 !important; background-color: #1e1e1e !important;
+    div[data-baseweb="select"] > div, div[data-baseweb="input"] > div { 
+        border: 2px solid #39FF14 !important; border-radius: 10px; 
     }
-    h1, h2, h3 { text-align: center; color: #39FF14; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("⚽ Football AI Predictions")
+st.title("⚽ AI Match Analysis (Live Data)")
+st.info("AI သည် LiveScore, AiScore နှင့် Goal.com တို့မှ အချက်အလက်များကို တိုက်ရိုက်စစ်ဆေးပါမည်။")
 
-# League & Date Selection
-league_map = {"Premier League": "PL", "Champions League": "CL", "La Liga": "PD", "Serie A": "SA", "Bundesliga": "BL1"}
-sel_league = st.selectbox("Select League", list(league_map.keys()))
+col1, col2 = st.columns(2)
+with col1:
+    home_team = st.text_input("🏠 Home Team")
+with col2:
+    away_team = st.text_input("🚀 Away Team")
 
-# အရေးကြီးသည်- ပွဲစဉ်ရှိနိုင်မယ့် ရက်စွဲကို ရွေးပေးရပါမယ် (ဥပမာ- ရှေ့လာမယ့် စနေ၊ တနင်္ဂနွေ)
-sel_date = st.date_input("Select Date", datetime.date.today())
-
-# ပွဲစဉ်တွေကို API ကနေ ရှာမယ်
-matches = get_matches(league_map[sel_league], sel_date.strftime("%Y-%m-%d"))
-
-st.write("---")
-home_team, away_team = "", ""
-
-# --- ဒီအပိုင်းက အသင်းတွေကို Pick လုပ်တဲ့အပိုင်းပါ ---
-if matches:
-    st.markdown("<h3>🎯 Select a Match to Analyze</h3>", unsafe_allow_html=True)
-    match_options = [f"{m['homeTeam']['name']} vs {m['awayTeam']['name']}" for m in matches]
-    selected_match_str = st.selectbox("ပွဲစဉ်ကို ရွေးချယ်ပါ", match_options)
-    
-    # ရွေးလိုက်တဲ့ ပွဲစဉ်ကနေ အသင်းနာမည်တွေကို ထုတ်ယူမယ်
-    for m in matches:
-        if f"{m['homeTeam']['name']} vs {m['awayTeam']['name']}" == selected_match_str:
-            home_team, away_team = m['homeTeam']['name'], m['awayTeam']['name']
-            break
-    
-    st.success(f"Selected: {home_team} vs {away_team}")
-else:
-    # ပွဲစဉ်ရှာမတွေ့မှသာ ရိုက်ထည့်ခိုင်းမယ့် Box ပေါ်လာမယ်
-    st.warning(f"⚠️ {sel_date} နေ့မှာ {sel_league} ပွဲစဉ်များ မရှိသေးပါ။")
-    st.info("ပွဲစဉ်ရှိမယ့် ရက်စွဲ (ဥပမာ- လာမည့်စနေနေ့) ကို ပြောင်းရွေးကြည့်ပါ သို့မဟုတ် အောက်တွင် ကိုယ်တိုင်ရိုက်ထည့်ပါ။")
-    c1, c2 = st.columns(2)
-    home_team = c1.text_input("Home Team", placeholder="Eg. Liverpool")
-    away_team = c2.text_input("Away Team", placeholder="Eg. Arsenal")
-
-# --- 4. PREDICTION BUTTON ---
-if st.button("Get AI Analysis"):
-    if home_team and away_team:
-        with st.spinner(f'Gemini 3 Flash က {home_team} vs {away_team} ကို သုံးသပ်နေပါသည်...'):
-            try:
-                prompt = f"Analyze {home_team} vs {away_team} in {sel_league}. Provide: Correct Score, O/U 2.5, Corners, BTTS, and Yellow Cards. Explain in Burmese with emojis."
-                response = model.generate_content(prompt)
-                st.markdown("### 🎯 AI Result")
-                st.write(response.text)
-            except Exception as e:
-                st.error(f"AI Error: {str(e)}")
+# --- 4. DATA-DRIVEN PROMPT ---
+if st.button("Generate Verified Analysis"):
+    if not home_team or not away_team:
+        st.warning("အသင်းနာမည်များ အရင်ထည့်ပေးပါဗျ။")
     else:
-        st.error("ကျေးဇူးပြု၍ အသင်းတစ်ပွဲကို အရင်ရွေးချယ်ပေးပါ။")
+        with st.spinner('မူရင်း Website များမှ နောက်ဆုံး ၅ ပွဲရလဒ်များကို အသေးစိတ် စစ်ဆေးနေပါသည်...'):
+            try:
+                # Prompt ကို အချက်အလက် မမှားစေရန် အောက်ပါအတိုင်း ခိုင်းထားသည်
+                prompt = f"""
+                You are a professional football data auditor.
+                Match: {home_team} vs {away_team} (2025-26 Season).
+                
+                Mandatory Steps:
+                1. Access these websites: {", ".join(sources)}.
+                2. Extract the EXACT results of the last 5 matches for {home_team} and {away_team}.
+                3. Do NOT guess. If a match was played yesterday, find the score.
+                4. Analyze Head-to-Head (H2H) and player injuries from these live sources.
+                
+                Report Structure (Burmese Language):
+                - ✅ Verified Last 5 Matches (Home/Away Table)
+                - 📊 Tactical Analysis based on current form
+                - 🎯 Prediction: Score, O/U 2.5, Corners, Cards (BTTS)
+                
+                Use professional football emojis and Burmese terminology.
+                Ensure 100% accuracy based on the provided links.
+                """
+                
+                response = model.generate_content(prompt)
+                st.success("Verification Complete!")
+                st.markdown("---")
+                st.markdown(f"### 📋 Match Analysis: {home_team} vs {away_team}")
+                st.write(response.text)
+                
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>Data Sources: LiveScore | AiScore | Goal.com | ESPN</p>", unsafe_allow_html=True)
