@@ -2,8 +2,8 @@ import streamlit as st
 import google.generativeai as genai
 import datetime
 
-# --- 1. UI DESIGN ---
-st.set_page_config(page_title="AI Tactical Match Finder", layout="centered")
+# --- 1. UI DESIGN (Professional Look) ---
+st.set_page_config(page_title="AI Pro Football Auditor", layout="centered")
 
 st.markdown("""
     <style>
@@ -14,24 +14,23 @@ st.markdown("""
     }
     div[data-baseweb="select"] > div { border: 2px solid #39FF14 !important; border-radius: 10px; }
     h1, h2, h3 { text-align: center; color: #39FF14; }
+    .report-box { border: 1px solid #39FF14; padding: 15px; border-radius: 15px; background-color: #1a1c24; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("⚽ AI Match Analysis (Ultra Search)")
+st.title("⚽ Ultimate Football Auditor")
 
-# --- 2. LEAGUE DATA ---
+# --- 2. LEAGUE & DATA SOURCES ---
 league_data = {
     "Premier League": {
-        "links": ["https://www.livescore.com/en/football/england/premier-league/", "https://www.espn.in/football/fixtures/_/league/eng.1"],
-        "teams": ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton And Hove Albion", "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham", "Leeds United", "Liverpool", "Manchester City", "Manchester United", "Newcastle United", "Nottingham Forest", "Sunderland", "Tottenham Hotspur", "West Ham United", "Wolves"]
+        "teams": ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton", "Chelsea", "Crystal Palace", "Everton", "Fulham", "Ipswich Town", "Leicester City", "Liverpool", "Manchester City", "Manchester United", "Newcastle", "Nottingham Forest", "Southampton", "Tottenham", "West Ham", "Wolves"]
     },
     "Champions League": {
-        "links": ["https://www.livescore.com/en/football/uefa-champions-league/", "https://www.espn.in/football/fixtures/_/league/uefa.champions"],
-        "teams": ["Real Madrid", "Manchester City", "Bayern Munich", "Arsenal", "Barcelona", "Inter Milan", "Liverpool", "PSG", "Atletico Madrid", "Dortmund", "AC Milan"]
+        "teams": ["Real Madrid", "Man City", "Bayern Munich", "Arsenal", "Barcelona", "Inter Milan", "Liverpool", "PSG", "Bayer Leverkusen", "Atletico Madrid", "Dortmund", "AC Milan"]
     }
 }
 
-# --- 3. INPUT ---
+# --- 3. INPUT SELECTION ---
 c_l, c_d = st.columns(2)
 with c_l:
     sel_league = st.selectbox("Select League", list(league_data.keys()))
@@ -46,8 +45,8 @@ with col1:
 with col2:
     away_team = st.selectbox("🚀 Away Team", league_data[sel_league]["teams"], index=1)
 
-# --- 4. DEEP SEARCH LOGIC ---
-if st.button("Deep Search & Analyze"):
+# --- 4. PREDICTION LOGIC (DEEP AUDIT MODE) ---
+if st.button("Deep Audit & Analysis"):
     if "GEMINI_API_KEY" not in st.secrets:
         st.error("Error: Secrets ထဲမှာ API KEY မတွေ့ပါ။")
     else:
@@ -55,33 +54,34 @@ if st.button("Deep Search & Analyze"):
             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
             model = genai.GenerativeModel('gemini-3-flash-preview')
 
-            with st.spinner(f'AI က {sel_date} အတွက် ပွဲစဉ်များကို Website အသီးသီးတွင် အပြင်းအထန် ရှာဖွေနေပါသည်...'):
-                # AI ကို ပိုမိုတိကျစွာ ရှာခိုင်းသည့် prompt
+            with st.spinner('AI က နောက်ဆုံး ၅ ပွဲရလဒ်များကို Website မျိုးစုံတွင် အပြင်းအထန် တိုက်စစ်နေပါသည်...'):
                 prompt = f"""
-                CRITICAL TASK: Verify if {home_team} vs {away_team} exists on {sel_date} in {sel_league}.
+                You are a professional Football Auditor. 
+                Task: Verify the match {home_team} vs {away_team} on {sel_date} in {sel_league}.
+                Current Season: 2025-26.
                 
-                Instructions:
-                1. Search Google with keywords: "{home_team} vs {away_team} {sel_date} fixtures".
-                2. Check multiple sports sites: ESPN, LiveScore, BBC Sport, and Sky Sports.
-                3. Today is {datetime.date.today()}.
+                Mandatory Search Steps:
+                1. Use Google Search to find the EXACT results of the LAST 5 MATCHES for both teams.
+                2. Cross-check results from LiveScore.com, ESPN, and Soccerway.
+                3. Do not assume or guess scores. If a match was yesterday, find the real score.
                 
-                Validation:
-                - If the match is postponed, cancelled, or doesn't exist on {sel_date}, clearly explain WHY.
-                - If the match exists, provide:
-                    a) Confirmed Kick-off Time.
-                    b) Recent 5 matches results for both (Audited).
-                    c) Tactical analysis & Score Prediction.
+                Report Structure (Burmese Language):
+                - ✅ Match Verification: {sel_date} မှာ ဒီပွဲ တကယ်ရှိမရှိ အတည်ပြုချက်။
+                - 📊 Audited Results (Last 5):
+                    * အသင်းတစ်သင်းချင်းစီအတွက် ပြိုင်ပွဲအမည်၊ ပြိုင်ဘက်၊ ရလဒ် နှင့် ဂိုးရလဒ်ကို ဇယားဖြင့်ဖော်ပြပါ။
+                    * (ဥပမာ- vs Liverpool (EPL) - ရှုံး (0-5) ❌)
+                - 🎯 Prediction: Verified data ပေါ်အခြေခံပြီး Score, O/U 2.5, Corners, Cards တို့ကို ခန့်မှန်းပါ။
                 
-                Language: Burmese with emojis. 
-                Don't say "not found" unless you have checked at least 3 sources.
+                Use professional football emojis. Accuracy is 100% required.
                 """
                 
                 response = model.generate_content(prompt)
-                st.success("ရှာဖွေမှု အောင်မြင်ပါသည်!")
+                st.success("Deep Audit ပြီးဆုံးပါပြီ!")
                 st.markdown("---")
+                st.markdown(f"### 📋 Audit Report: {home_team} vs {away_team}")
                 st.write(response.text)
                 
         except Exception as e:
             st.error(f"Search Error: {str(e)}")
 
-st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.6 - Deep Search Mode | Gemini 3 Flash</p>", unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.7 - Ultra Deep Audit Mode | Verified by AI</p>", unsafe_allow_html=True)
