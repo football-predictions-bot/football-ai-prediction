@@ -19,7 +19,7 @@ st.markdown("""
 
 st.title("⚽ Live Data Match Analyst")
 
-# --- 2. LEAGUE DATA ---
+# --- 2. LEAGUE DATA (OFFICIAL ESPN LINKS) ---
 league_data = {
     "Premier League": {
         "link": "https://www.espn.in/football/teams/_/league/ENG.1/english-premier-league",
@@ -46,38 +46,40 @@ with col1:
 with col2:
     away_team = st.selectbox("🚀 Away Team", league_data[sel_league]["teams"], index=1)
 
-# --- 4. PREDICTION LOGIC (GEMINI 3 FLASH) ---
+# --- 4. PREDICTION LOGIC (WITH MATCH VERIFICATION) ---
 if st.button("Generate Verified Live Analysis"):
     if "GEMINI_API_KEY" not in st.secrets:
         st.error("Error: Secrets ထဲမှာ API KEY မတွေ့ပါ။")
     else:
         try:
             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-            
-            # လက်ရှိ ၂၀၂၆ ခုနှစ်အတွက် Gemini 3 Flash (Preview) ကို အသုံးပြုထားသည်
             model = genai.GenerativeModel('gemini-3-flash-preview')
 
-            with st.spinner('AI က Web Data များကို ရှာဖွေစစ်ဆေးနေပါသည်...'):
+            with st.spinner('ပထမဦးစွာ သတ်မှတ်ရက်စွဲတွင် ပွဲစဉ်ရှိမရှိ စစ်ဆေးနေပါသည်...'):
+                # AI ကို အရင်ဆုံး ပွဲရှိမရှိ စစ်ခိုင်းသည့် Prompt
                 prompt = f"""
-                Professional Audit Request (Current Date: {sel_date}):
-                Please analyze the match: {home_team} vs {away_team} in {sel_league}.
+                Professional Audit Task (Today is {datetime.date.today()}, checking for {sel_date}):
                 
-                Mandatory Tasks:
-                1. Find the REAL last 5 match results for both teams from sources like ESPN, LiveScore, or Goal.com.
-                2. Check latest player injuries and tactical updates for the 2025-26 season.
-                3. Provide prediction: Correct Score, O/U 2.5, Corners, BTTS, and Yellow Cards.
+                Step 1: Use Google Search to check the official 2025-26 fixture list for {sel_league}.
+                Step 2: Does {home_team} play against {away_team} on the date {sel_date}?
                 
-                Answer in Burmese language with professional football emojis. 
-                Focus on accuracy based on live web information.
+                IF NO MATCH EXISTS: 
+                Simply reply in Burmese that "ဒီနေ့မှာ {home_team} နဲ့ {away_team} တို့ရဲ့ ပွဲစဉ်မရှိပါဘူး။" and list the next upcoming match date for them.
+                
+                IF MATCH EXISTS:
+                1. Provide the REAL last 5 results (W/D/L) for both.
+                2. Analyze injuries and Head-to-Head.
+                3. Prediction: Score, O/U 2.5, Corners, BTTS, Yellow Cards.
+                
+                Language: Burmese with emojis. Accuracy is the top priority.
                 """
                 
                 response = model.generate_content(prompt)
-                st.success("ခွဲခြမ်းစိတ်ဖြာမှု ပြီးဆုံးပါပြီ!")
+                st.success("စစ်ဆေးမှု ပြီးဆုံးပါပြီ!")
                 st.markdown("---")
-                st.markdown(f"### 📊 Professional Report: {home_team} vs {away_team}")
                 st.write(response.text)
                 
         except Exception as e:
             st.error(f"AI Connection Error: {str(e)}")
 
-st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.4 - Gemini 3 Flash Preview | Live Web Analysis</p>", unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.5 - Match Verification Mode | Powered by Gemini 3</p>", unsafe_allow_html=True)
