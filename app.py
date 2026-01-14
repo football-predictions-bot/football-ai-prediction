@@ -2,13 +2,13 @@ import streamlit as st
 import google.generativeai as genai
 import datetime
 
-# --- 1. AI SETUP ---
+# --- 1. AI SETUP (GEMINI 3 FLASH) ---
 def setup_ai():
     try:
         if "GEMINI_API_KEY" not in st.secrets:
             return None
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        # အင်တာနက်ရှာဖွေရေး Tool ကို ထည့်သွင်းထားသည်
+        # Google Search Tool ပါဝင်သော Gemini 3 Flash Preview
         return genai.GenerativeModel(
             model_name='gemini-3-flash-preview',
             tools=[{'google_search': {}}]
@@ -18,16 +18,32 @@ def setup_ai():
 
 model = setup_ai()
 
-# --- 2. SOURCE LINKS FOR VERIFICATION ---
-sources = [
-    "https://www.livescore.com/en/",
-    "https://m.aiscore.com/",
-    "https://www.goal.com/en/live-scores",
-    "https://www.espn.in/football/fixtures"
-]
+# --- 2. LEAGUE DATA WITH OFFICIAL LINKS ---
+league_data = {
+    "Premier League": {
+        "link": "https://www.espn.in/football/teams/_/league/ENG.1/english-premier-league",
+        "teams": ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton And Hove Albion", "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham", "Leeds United", "Liverpool", "Manchester City", "Manchester United", "Newcastle United", "Nottingham Forest", "Sunderland", "Tottenham Hotspur", "West Ham United", "Wolverhampton Wanderers"]
+    },
+    "Champions League": {
+        "link": "https://www.espn.in/football/teams/_/league/uefa.champions",
+        "teams": ["Real Madrid", "Manchester City", "Bayern Munich", "Arsenal", "Barcelona", "Inter Milan", "Liverpool", "PSG", "Bayer Leverkusen", "Atletico Madrid", "Dortmund", "AC Milan", "Aston Villa", "Sporting CP", "Benfica", "Monaco"]
+    },
+    "La Liga": {
+        "link": "https://www.espn.in/football/teams/_/league/ESP.1/spanish-laliga",
+        "teams": ["Alaves", "Athletic Club", "Atletico Madrid", "Barcelona", "Celta Vigo", "Espanyol", "Getafe", "Girona", "Las Palmas", "Leganes", "Mallorca", "Osasuna", "Rayo Vallecano", "Real Betis", "Real Madrid", "Real Sociedad", "Sevilla", "Valencia", "Valladolid", "Villarreal"]
+    },
+    "Serie A": {
+        "link": "https://www.espn.in/football/teams/_/league/ITA.1/italian-serie-a",
+        "teams": ["AC Milan", "Atalanta", "Bologna", "Cagliari", "Como", "Empoli", "Fiorentina", "Genoa", "Inter Milan", "Juventus", "Lazio", "Lecce", "Napoli", "Parma", "AS Roma", "Torino", "Udinese", "Verona"]
+    },
+    "France Ligue 1": {
+        "link": "https://www.espn.in/football/teams/_/league/FRA.1/french-ligue-1",
+        "teams": ["Angers", "Auxerre", "Brest", "Le Havre", "Lens", "Lille", "Lyon", "Marseille", "Monaco", "Montpellier", "Nantes", "Nice", "Paris Saint-Germain", "Reims", "Rennes", "Strasbourg", "St Etienne", "Toulouse"]
+    }
+}
 
-# --- 3. UI ---
-st.set_page_config(page_title="AI Tactical Analyst", layout="centered")
+# --- 3. UI DESIGN ---
+st.set_page_config(page_title="AI Match Analyst Pro", layout="centered")
 
 st.markdown("""
     <style>
@@ -36,55 +52,62 @@ st.markdown("""
         background: linear-gradient(90deg, #39FF14 0%, #20C20E 100%);
         color: black; border-radius: 12px; height: 3.5em; width: 100%; font-weight: bold; border: none;
     }
-    div[data-baseweb="select"] > div, div[data-baseweb="input"] > div { 
-        border: 2px solid #39FF14 !important; border-radius: 10px; 
-    }
+    div[data-baseweb="select"] > div { border: 2px solid #39FF14 !important; border-radius: 10px; }
+    h1, h2, h3 { text-align: center; color: #39FF14; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("⚽ AI Match Analysis (Live Data)")
-st.info("AI သည် LiveScore, AiScore နှင့် Goal.com တို့မှ အချက်အလက်များကို တိုက်ရိုက်စစ်ဆေးပါမည်။")
+st.title("⚽ Live Data Match Analyst")
 
+# --- LEAGUE & DATE PICKER ---
+st.subheader("📋 Step 1: Select Match Info")
+c_l, c_d = st.columns(2)
+with c_l:
+    sel_league = st.selectbox("Select League", list(league_data.keys()))
+with c_d:
+    sel_date = st.date_input("Select Match Date", datetime.date.today())
+
+st.write("---")
+
+# --- TEAM PICKER ---
+st.subheader("🎯 Step 2: Pick Teams")
 col1, col2 = st.columns(2)
 with col1:
-    home_team = st.text_input("🏠 Home Team")
+    home_team = st.selectbox("🏠 Home Team", league_data[sel_league]["teams"], index=0)
 with col2:
-    away_team = st.text_input("🚀 Away Team")
+    away_team = st.selectbox("🚀 Away Team", league_data[sel_league]["teams"], index=1)
 
-# --- 4. DATA-DRIVEN PROMPT ---
-if st.button("Generate Verified Analysis"):
-    if not home_team or not away_team:
-        st.warning("အသင်းနာမည်များ အရင်ထည့်ပေးပါဗျ။")
+# --- 4. PREDICTION LOGIC ---
+if st.button("Generate Verified Live Analysis"):
+    if home_team == away_team:
+        st.error("Error: အိမ်ကွင်းနှင့် အဝေးကွင်း အသင်းမတူရပါ။")
+    elif not model:
+        st.error("Error: AI ချိတ်ဆက်မှုမရှိပါ။")
     else:
-        with st.spinner('မူရင်း Website များမှ နောက်ဆုံး ၅ ပွဲရလဒ်များကို အသေးစိတ် စစ်ဆေးနေပါသည်...'):
+        with st.spinner('AI က မူရင်း Website များမှ နောက်ဆုံး ၅ ပွဲရလဒ်များကို စစ်ဆေးနေပါသည်...'):
             try:
-                # Prompt ကို အချက်အလက် မမှားစေရန် အောက်ပါအတိုင်း ခိုင်းထားသည်
+                # AI အတွက် ညွှန်ကြားချက်များ
                 prompt = f"""
-                You are a professional football data auditor.
-                Match: {home_team} vs {away_team} (2025-26 Season).
+                Professional Audit Request:
+                You must verify data before responding.
+                1. Go to {league_data[sel_league]["link"]} and also check LiveScore.com, Goal.com.
+                2. Find the ACTUAL results of the LAST 5 MATCHES for {home_team} and {away_team} (2025-26 Season).
+                3. Check current injury updates and H2H stats for {sel_date}.
                 
-                Mandatory Steps:
-                1. Access these websites: {", ".join(sources)}.
-                2. Extract the EXACT results of the last 5 matches for {home_team} and {away_team}.
-                3. Do NOT guess. If a match was played yesterday, find the score.
-                4. Analyze Head-to-Head (H2H) and player injuries from these live sources.
+                Format (Burmese Language):
+                - ✅ နောက်ဆုံး ၅ ပွဲရလဒ် အစစ်အမှန်များ (Table Format)
+                - 📊 Tactical Analysis (Current Form အပေါ်အခြေခံသည်)
+                - 🎯 Prediction: Score, O/U 2.5, Corners, BTTS, Yellow Cards
                 
-                Report Structure (Burmese Language):
-                - ✅ Verified Last 5 Matches (Home/Away Table)
-                - 📊 Tactical Analysis based on current form
-                - 🎯 Prediction: Score, O/U 2.5, Corners, Cards (BTTS)
-                
-                Use professional football emojis and Burmese terminology.
-                Ensure 100% accuracy based on the provided links.
+                Use football emojis and be 100% accurate based on the web data.
                 """
                 
                 response = model.generate_content(prompt)
                 st.success("Verification Complete!")
                 st.markdown("---")
-                st.markdown(f"### 📋 Match Analysis: {home_team} vs {away_team}")
+                st.markdown(f"### 📋 {sel_league} Report: {home_team} vs {away_team}")
                 st.write(response.text)
-                
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"AI API Error: {str(e)}")
 
-st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>Data Sources: LiveScore | AiScore | Goal.com | ESPN</p>", unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 3.0 - Full Feature Pick & Live Verification | Gemini 3</p>", unsafe_allow_html=True)
