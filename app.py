@@ -22,83 +22,90 @@ st.markdown("""
 
 st.title("⚽ Football Predictions Bot (2026)")
 
-# --- 2. CORE LOGIC: API & AI ROTATION ---
+# --- 2. CORE FUNCTIONS ---
 
-# API Data ယူပြီး Cache လုပ်ထားမည့် Function (၆ နာရီ သက်တမ်း)
-@st.cache_data(ttl=21600)
-def get_football_data(team_id):
+def get_rotated_model():
+    keys = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"], st.secrets["GEMINI_KEY_3"]]
+    genai.configure(api_key=random.choice(keys))
+    return genai.GenerativeModel('gemini-1.5-flash')
+
+@st.cache_data(ttl=3600)
+def get_matches_by_date(league_id, date_str):
     url = "https://v3.football.api-sports.io/fixtures"
     headers = {'x-apisports-key': st.secrets["APISPORTS_KEY"]}
-    params = {'team': team_id, 'last': 5}
+    params = {'league': league_id, 'season': 2025, 'date': date_str}
     try:
         response = requests.get(url, headers=headers, params=params)
         return response.json().get('response', [])
     except:
         return []
 
-# Gemini Model ကို အလှည့်ကျ ခေါ်ပေးမည့် Function
-def get_rotated_model():
-    keys = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"], st.secrets["GEMINI_KEY_3"]]
-    selected_key = random.choice(keys)
-    genai.configure(api_key=selected_key)
-    return genai.GenerativeModel('gemini-1.5-flash')
+@st.cache_data(ttl=21600)
+def get_team_form(team_id):
+    url = "https://v3.football.api-sports.io/fixtures"
+    headers = {'x-apisports-key': st.secrets["APISPORTS_KEY"]}
+    params = {'team': team_id, 'last': 5}
+    response = requests.get(url, headers=headers, params=params)
+    return response.json().get('response', [])
 
-# --- 3. TEAM DATA (API IDs added) ---
-# Premier League အတွက် API IDs များ
-pl_teams = {
-    "Arsenal": 42, "Aston Villa": 66, "Bournemouth": 35, "Brentford": 55, 
-    "Brighton": 51, "Chelsea": 49, "Crystal Palace": 52, "Everton": 45, 
-    "Fulham": 36, "Liverpool": 40, "Manchester City": 50, "Manchester United": 33, 
-    "Newcastle United": 34, "Nottingham Forest": 65, "Tottenham Hotspur": 47, 
-    "West Ham United": 48, "Wolves": 39
+# --- 3. DATA ---
+leagues = {
+    "Premier League": 39,
+    "La Liga": 140,
+    "Serie A": 135,
+    "Bundesliga": 78
 }
 
-# --- 4. MATCH CHECKER ---
-st.subheader("🔍 Part 1: Verified Team Form")
-sel_team_name = st.selectbox("အသင်းရွေးချယ်ပါ", list(pl_teams.keys()))
+# --- 4. PART 1: MATCH FINDER BY DATE ---
+st.subheader("🔍 Part 1: Real-Time Match Finder")
+c1, c2 = st.columns(2)
+with c1:
+    sel_league = st.selectbox("League ရွေးပါ", list(leagues.keys()))
+with c2:
+    sel_date = st.date_input("Date ရွေးပါ", datetime.date.today())
 
-if st.button("Check Latest Form Now"):
-    with st.spinner('API မှ တကယ့်ရလဒ်များကို ရယူနေပါသည်...'):
-        results = get_football_data(pl_teams[sel_team_name])
+if st.button("Check Matches Now"):
+    date_str = sel_date.strftime('%Y-%m-%d')
+    with st.spinner(f'{sel_league} ပွဲစဉ်များကို ရှာဖွေနေပါသည်...'):
+        matches = get_matches_by_date(leagues[sel_league], date_str)
         
-        if results:
-            st.write(f"### {sel_team_name} Last 5 Results")
-            summary = ""
-            for m in results:
-                match_str = f"{m['teams']['home']['name']} {m['goals']['home']} - {m['goals']['away']} {m['teams']['away']['name']}"
-                st.markdown(f"<div class='match-box'>⚽ {match_str}</div>", unsafe_allow_html=True)
-                summary += match_str + "\n"
-            
-            # AI Analysis
-            try:
-                model = get_rotated_model()
-                prompt = f"Analyze these {sel_team_name} results: {summary}. Give a professional prediction for their next match in Burmese. Be realistic."
-                ai_resp = model.generate_content(prompt)
-                st.markdown(f"<div class='report-card'><b>🤖 AI Analysis:</b><br>{ai_resp.text}</div>", unsafe_allow_html=True)
-            except:
-                st.error("Key Limit ပြည့်နေပါသည်။ ခဏစောင့်ပါ။")
+        if matches:
+            st.write(f"### {sel_league} Matches on {date_str}")
+            for m in matches:
+                status = m['fixture']['status']['short']
+                home = m['teams']['home']['name']
+                away = m['teams']['away']['name']
+                h_goal = m['goals']['home'] if m['goals']['home'] is not None else ""
+                a_goal = m['goals']['away'] if m['goals']['away'] is not None else ""
+                
+                st.markdown(f"<div class='match-box'>⏰ {m['fixture']['date'][11:16]} | {home} {h_goal} - {a_goal} {away} ({status})</div>", unsafe_allow_html=True)
         else:
-            st.error("Data ရှာမတွေ့ပါ။ API Key ကို စစ်ဆေးပါ။")
+            st.info("ယနေ့အတွက် ပွဲစဉ်များ ရှာမတွေ့ပါ။")
 
 st.write("---")
 
-# --- 5. HEAD TO HEAD (Simplified for Performance) ---
-st.subheader("🎯 Part 2: Quick Match Analysis")
-c1, c2 = st.columns(2)
-with c1:
-    h_team = st.selectbox("🏠 Home", list(pl_teams.keys()), key="h")
-with c2:
-    a_team = st.selectbox("🚀 Away", list(pl_teams.keys()), index=1, key="a")
+# --- 5. PART 2: TEAM ANALYSIS ---
+st.subheader("🎯 Part 2: Team Form & AI Analysis")
+# (မှတ်ချက် - ဤနေရာတွင် ID များထည့်ရန် လိုအပ်ပါသည်၊ ဥပမာအနေဖြင့် Arsenal သာ ပြထားပါသည်)
+pl_teams = {"Arsenal": 42, "Man City": 50, "Liverpool": 40, "Chelsea": 49, "Man United": 33}
+sel_team = st.selectbox("အသင်းကို ရွေးချယ်ပြီး Form စစ်ဆေးပါ", list(pl_teams.keys()))
 
-if st.button("Generate Match Prediction"):
-    # ဤနေရာတွင် AI ကို Data အချက်အလက်ပေးပြီး ခွဲခြမ်းစိတ်ဖြာခိုင်းပါမည်
-    try:
-        model = get_rotated_model()
-        with st.spinner('ခွဲခြမ်းစိတ်ဖြာနေပါသည်...'):
-            prompt = f"Predict the match between {h_team} and {a_team} based on typical 2026 season form in Burmese."
-            response = model.generate_content(prompt)
-            st.markdown(f"<div class='report-card'>{response.text}</div>", unsafe_allow_html=True)
-    except:
-        st.error("Error in AI Prediction.")
+if st.button("Generate Verified Prediction"):
+    with st.spinner('Data နှင့် AI Analysis ကို ပြင်ဆင်နေပါသည်...'):
+        form_data = get_team_form(pl_teams[sel_team])
+        if form_data:
+            summary = ""
+            for f in form_data:
+                res = f"{f['teams']['home']['name']} {f['goals']['home']}-{f['goals']['away']} {f['teams']['away']['name']}"
+                summary += res + "\n"
+                st.write(f"✅ {res}")
+            
+            try:
+                model = get_rotated_model()
+                ai_prompt = f"Analyze these recent results for {sel_team}: {summary}. Provide a prediction in Burmese."
+                response = model.generate_content(ai_prompt)
+                st.markdown(f"<div class='report-card'>{response.text}</div>", unsafe_allow_html=True)
+            except:
+                st.error("AI Limit ပြည့်သွားပါပြီ။ ၁ မိနစ်ခန့် စောင့်ပါ။")
 
-st.markdown("<br><p style='text-align: center; font-size: 10px; color: gray;'>V 7.0 - Hybrid API-Sports & Gemini Engine</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; font-size: 10px; color: gray;'>V 8.0 - Full API Integration</p>", unsafe_allow_html=True)
