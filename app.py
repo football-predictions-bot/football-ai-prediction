@@ -40,7 +40,7 @@ league_data = {
     },
     "France Ligue 1": {
         "url": "https://www.espn.in/football/teams/_/league/FRA.1/french-ligue-1",
-        "teams": ["Angers", "Auxerre", "Brest", "Le Havre", "Lens", "Lille", "Lorient", "Lyon", "Marseille", "Metz", "Monaco", "Montpellier", "Nantes", "Nice", "Paris FC", "Paris Saint-Germain", "Rennes", "Strasbourg", "Toulouse"]
+        "teams": ["Angers", "Auxerre", "Brest", "Le Havre", "Lens", "Lille", "Lorient", "Lyon", "Marseille", "Metz", "Monaco", "Nantes", "Nice", "Paris FC", "Paris Saint-Germain", "Rennes", "Strasbourg", "Toulouse"]
     },
     "Champions League": {
         "url": "https://www.uefa.com/uefachampionsleague/standings/",
@@ -52,74 +52,63 @@ league_data = {
 st.subheader("🔍 Part 1: Check Matches (Strict 2026)")
 c1, c2 = st.columns(2)
 with c1:
-    sel_league = st.selectbox("Select League", list(league_data.keys()))
+    sel_league = st.selectbox("Select League", list(league_data.keys()), key="main_league")
 with c2:
     sel_date = st.date_input("Select Date", datetime.date.today())
 
 if st.button("Check Match List"):
+    if "GEMINI_API_KEY" not in st.secrets:
+        st.error("API Key မတွေ့ပါ။ Secrets တွင် ထည့်သွင်းပါ။")
+    else:
+        try:
+            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+            model = genai.GenerativeModel('gemini-3-flash-preview')
+            with st.spinner('Checking 2026 Live Data...'):
+                search_prompt = f"""
+                AUDIT: Today is {datetime.date.today()} (2026).
+                STRICT RULE: Ignore all data before August 2025.
+                Task: List ALL {sel_league} matches on {sel_date}.
+                If no match in 2025-26 season, say "ယနေ့တွင် ပွဲစဉ်များ လုံးဝမရှိပါ။"
+                """
+                response = model.generate_content(search_prompt)
+                st.markdown(f"<div class='report-card'><h3>📅 {sel_date} Fixtures</h3>{response.text}</div>", unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+
+st.write("---")
+
+# --- 4. PART 2: PREDICTIONS ---
+st.subheader("🎯 Part 2: Predict & Analyze")
+col1, col2 = st.columns(2)
+with col1:
+    home_in = st.selectbox("🏠 Home Team", league_data[sel_league]["teams"], key="h_box")
+with col2:
+    away_in = st.selectbox("🚀 Away Team", league_data[sel_league]["teams"], index=1, key="a_box")
+
+if st.button("Generate Predictions"):
     if "GEMINI_API_KEY" not in st.secrets:
         st.error("API Key မရှိသေးပါ။")
     else:
         try:
             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
             model = genai.GenerativeModel('gemini-3-flash-preview')
-            with st.spinner('၂၀၂၆ ခုနှစ်၏ Live Data များကို အပြင်းအထန် စစ်ဆေးနေပါသည်...'):
-                search_prompt = f"""
-                CRITICAL 2026 AUDIT: Today's date is {datetime.date.today()}.
-                STRICT RULE: Absolutely IGNORE all match data from 2024 or before August 2025.
-                These are "Back-dates" and are forbidden.
+            with st.spinner('Analyzing Current 2026 Season...'):
+                audit_prompt = f"""
+                ULTRA-STRICT 2026 AUDIT: Today is {datetime.date.today()}.
+                Match: {home_in} vs {away_in} ({sel_league}).
                 
-                Task: Find matches for '{sel_league}' on '{sel_date}' strictly from the 2025-26 season calendar.
-                Verify using: LiveScore, AiScore, Goal.com.
-                If the date provided belongs to a past season (2024 or early 2025), say: "ဤရက်စွဲသည် အတိတ်ဟောင်းဖြစ်နေသဖြင့် ရှာဖွေ၍မရပါ။"
-                If no match found for this 2026 date, say: "ယနေ့တွင် ပွဲစဉ်များ လုံးဝမရှိပါ။"
+                RULES:
+                1. NO 2024 DATA ALLOWED.
+                2. IGNORE ALL BACK-DATES before August 2025.
+                3. Only show results from 2025-26 season.
                 
-                Language: Burmese.
+                Provide in Burmese:
+                - Last 5 Results Table.
+                - Prediction (Score, O/U, Corners, Cards, BTTS).
                 """
-                response = model.generate_content(search_prompt)
-                st.markdown(f"<div class='report-card'><h3>📅 {sel_date} Fixtures (2026 Verified)</h3>{response.text}</div>", unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
-
-st.write("---")
-
-# --- 4. PART 2: DROP-DOWN PREDICTIONS ---
-st.subheader("🎯 Part 2: Predict & Analyze")
-col1, col2 = st.columns(2)
-with col1:
-    home_team = st.selectbox("🏠 Home Team", league_data[sel_league]["teams"], key="h_box")
-with col2:
-    away_team = st.selectbox("🚀 Away Team", league_data[sel_league]["teams"], index=1, key="a_box")
-
-if st.button("Generate Predictions"):
-    try:
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        model = genai.GenerativeModel('gemini-3-flash-preview')
-        with st.spinner('၂၀၂၆ ခုနှစ်၏ အချက်အလက်များကိုသာ စစ်ဆေးနေပါသည်...'):
-            audit_prompt = f"""
-            ULTRA-STRICT 2026 AUDIT. Current Date: {datetime.date.today()}.
-            Target Match: {home_team} vs {away_team} ({sel_league}).
-            
-            MANDATORY RULES:
-            1. DELETE/IGNORE all knowledge of matches played before August 2025.
-            2. "Back-dates" are prohibited. 
-            3. Use only the results from the 2025-26 Season league table and recent form.
-            4. Verify player availability for January 2026.
-            
-            Deliverable (Language: Burmese):
-            - Last 5 Match Results Table (2025-26 ONLY).
-            - Professional Predictions: Correct Score, Over/Under 2.5, Corners, Cards, BTTS.
-            
-            Double Check: Is the year 2026? Yes. Proceed with only 2026 context.
-            """
-            prediction = model.generate_content(audit_prompt)
-            st.markdown(f"<div class='report-card'><h3>📊 2026 Deep Analysis: {home_team} vs {away_team}</h3>{prediction.text}</div>", unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"Error: {str(e)}")
-
-st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 5.6 - Iron-Clad 2026 Auditor | Anti-Backdate Protected</p>", unsafe_allow_html=True)
+                prediction = model.generate_content(audit_prompt)
                 st.markdown(f"<div class='report-card'><h3>📊 Prediction: {home_in} vs {away_in}</h3>{prediction.text}</div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 4.1 - Ultra-Strict Match Auditor | 2026 Live Mode</p>", unsafe_allow_html=True)
+st.markdown("<br><hr><p style='text-align: center; font-size: 10px; color: gray;'>V 5.7 - Fixed Indent | 2026 Strict Mode</p>", unsafe_allow_html=True)
