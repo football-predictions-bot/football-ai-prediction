@@ -1,6 +1,8 @@
 import streamlit as st
+import requests
 import google.generativeai as genai
 import datetime
+import random
 
 # --- 1. UI CONFIGURATION ---
 st.set_page_config(page_title="2026 Football Auditor", layout="centered")
@@ -10,77 +12,93 @@ st.markdown("""
     .stApp { background-color: #0E1117; color: white; }
     .stButton>button {
         background: linear-gradient(90deg, #39FF14 0%, #20C20E 100%);
-        color: black; border-radius: 12px; font-weight: bold; border: none;
+        color: black; border-radius: 12px; font-weight: bold; border: none; width: 100%;
     }
     h1, h2, h3 { color: #39FF14; text-align: center; }
     .report-card { background-color: #1a1c24; padding: 20px; border-radius: 15px; border-left: 5px solid #39FF14; margin-bottom: 20px; }
+    .match-box { border: 1px solid #333; padding: 10px; border-radius: 10px; margin-bottom: 5px; background: #252833; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("⚽ Football Predictions Bot (2026)")
 
-# --- 2. SETUP MODEL WITH GOOGLE SEARCH TOOL ---
-def get_model(api_key):
-    genai.configure(api_key=api_key)
-    # ၂၀၂၆ ဇန်နဝါရီအတွက် အသင့်တော်ဆုံး Gemini 3 Flash Model ကို သုံးထားပါတယ်
-    # 'google_search_retrieval' tool ကို ထည့်သွင်းပြီး Live Data ရှာခိုင်းပါမည်
-    model = genai.GenerativeModel(
-        model_name='gemini-3-flash-preview',
-        tools=[{'google_search_retrieval': {}}] 
-    )
-    return model
+# --- 2. CORE LOGIC: API & AI ROTATION ---
 
-# --- 3. TEAM DATA ---
-league_data = {
-    "Premier League": ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton", "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham", "Leeds United", "Liverpool", "Manchester City", "Manchester United", "Newcastle United", "Nottingham Forest", "Sunderland", "Tottenham Hotspur", "West Ham United", "Wolves"],
-    "La Liga": ["Alaves", "Athletic Club", "Atletico Madrid", "Barcelona", "Celta Vigo", "Elche CF", "Espanyol", "Getafe", "Girona", "Las Palmas", "Leganes", "Levante", "Mallorca", "Osasuna", "Rayo Vallecano", "Real Betis", "Real Madrid", "Real Oviedo", "Real Sociedad", "Sevilla", "Valencia", "Villarreal"],
-    "Serie A": ["AC Milan", "AS Roma", "Atalanta", "Bologna", "Cagliari", "Como", "Cremonese", "Fiorentina", "Genoa", "Inter Milan", "Juventus", "Lazio", "Lecce", "Napoli", "Parma", "Pisa", "Sassuolo", "Torino", "Udinese", "Verona"]
+# API Data ယူပြီး Cache လုပ်ထားမည့် Function (၆ နာရီ သက်တမ်း)
+@st.cache_data(ttl=21600)
+def get_football_data(team_id):
+    url = "https://v3.football.api-sports.io/fixtures"
+    headers = {'x-apisports-key': st.secrets["APISPORTS_KEY"]}
+    params = {'team': team_id, 'last': 5}
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        return response.json().get('response', [])
+    except:
+        return []
+
+# Gemini Model ကို အလှည့်ကျ ခေါ်ပေးမည့် Function
+def get_rotated_model():
+    keys = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"], st.secrets["GEMINI_KEY_3"]]
+    selected_key = random.choice(keys)
+    genai.configure(api_key=selected_key)
+    return genai.GenerativeModel('gemini-1.5-flash')
+
+# --- 3. TEAM DATA (API IDs added) ---
+# Premier League အတွက် API IDs များ
+pl_teams = {
+    "Arsenal": 42, "Aston Villa": 66, "Bournemouth": 35, "Brentford": 55, 
+    "Brighton": 51, "Chelsea": 49, "Crystal Palace": 52, "Everton": 45, 
+    "Fulham": 36, "Liverpool": 40, "Manchester City": 50, "Manchester United": 33, 
+    "Newcastle United": 34, "Nottingham Forest": 65, "Tottenham Hotspur": 47, 
+    "West Ham United": 48, "Wolves": 39
 }
 
-# --- 4. MATCH CHECKER (LIVE) ---
-st.subheader("🔍 Part 1: Real-Time Match Finder")
-c1, c2 = st.columns(2)
-with c1:
-    sel_league = st.selectbox("League", list(league_data.keys()))
-with c2:
-    sel_date = st.date_input("Date", datetime.date.today())
+# --- 4. MATCH CHECKER ---
+st.subheader("🔍 Part 1: Verified Team Form")
+sel_team_name = st.selectbox("အသင်းရွေးချယ်ပါ", list(pl_teams.keys()))
 
-if st.button("Check Matches Now"):
-    if "GEMINI_API_KEY" not in st.secrets:
-        st.error("API Key မတွေ့ပါ။")
-    else:
-        try:
-            model = get_model(st.secrets["GEMINI_API_KEY"])
-            with st.spinner('Google Search မှ တိုက်ရိုက် ရှာဖွေနေပါသည်...'):
-                prompt = f"Search Google and list all real matches for {sel_league} on {sel_date}. If no matches, say so clearly in Burmese. Date is January 2026."
-                response = model.generate_content(prompt)
-                st.markdown(f"<div class='report-card'>{response.text}</div>", unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"Error: {e}")
+if st.button("Check Latest Form Now"):
+    with st.spinner('API မှ တကယ့်ရလဒ်များကို ရယူနေပါသည်...'):
+        results = get_football_data(pl_teams[sel_team_name])
+        
+        if results:
+            st.write(f"### {sel_team_name} Last 5 Results")
+            summary = ""
+            for m in results:
+                match_str = f"{m['teams']['home']['name']} {m['goals']['home']} - {m['goals']['away']} {m['teams']['away']['name']}"
+                st.markdown(f"<div class='match-box'>⚽ {match_str}</div>", unsafe_allow_html=True)
+                summary += match_str + "\n"
+            
+            # AI Analysis
+            try:
+                model = get_rotated_model()
+                prompt = f"Analyze these {sel_team_name} results: {summary}. Give a professional prediction for their next match in Burmese. Be realistic."
+                ai_resp = model.generate_content(prompt)
+                st.markdown(f"<div class='report-card'><b>🤖 AI Analysis:</b><br>{ai_resp.text}</div>", unsafe_allow_html=True)
+            except:
+                st.error("Key Limit ပြည့်နေပါသည်။ ခဏစောင့်ပါ။")
+        else:
+            st.error("Data ရှာမတွေ့ပါ။ API Key ကို စစ်ဆေးပါ။")
 
 st.write("---")
 
-# --- 5. DEEP ANALYSIS & PREDICTION ---
-st.subheader("🎯 Part 2: Honest Analysis")
-col1, col2 = st.columns(2)
-with col1:
-    home_in = st.selectbox("🏠 Home Team", league_data[sel_league], key="h")
-with col2:
-    away_in = st.selectbox("🚀 Away Team", league_data[sel_league], index=1, key="a")
+# --- 5. HEAD TO HEAD (Simplified for Performance) ---
+st.subheader("🎯 Part 2: Quick Match Analysis")
+c1, c2 = st.columns(2)
+with c1:
+    h_team = st.selectbox("🏠 Home", list(pl_teams.keys()), key="h")
+with c2:
+    a_team = st.selectbox("🚀 Away", list(pl_teams.keys()), index=1, key="a")
 
-if st.button("Generate Verified Prediction"):
+if st.button("Generate Match Prediction"):
+    # ဤနေရာတွင် AI ကို Data အချက်အလက်ပေးပြီး ခွဲခြမ်းစိတ်ဖြာခိုင်းပါမည်
     try:
-        model = get_model(st.secrets["GEMINI_API_KEY"])
-        with st.spinner('နောက်ဆုံး ၅ ပွဲရလဒ်များကို Google မှ အတည်ပြုနေပါသည်...'):
-            prompt = f"""
-            Search the internet for the last 5 match results of {home_in} and {away_in} in the 2025-26 season.
-            Strictly use only actual scores from late 2025 and 2026.
-            After finding results, provide a professional prediction in Burmese.
-            Show the scores and dates for the last 5 matches.
-            """
+        model = get_rotated_model()
+        with st.spinner('ခွဲခြမ်းစိတ်ဖြာနေပါသည်...'):
+            prompt = f"Predict the match between {h_team} and {a_team} based on typical 2026 season form in Burmese."
             response = model.generate_content(prompt)
             st.markdown(f"<div class='report-card'>{response.text}</div>", unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"Error: {e}")
+    except:
+        st.error("Error in AI Prediction.")
 
-st.markdown("<br><p style='text-align: center; font-size: 10px; color: gray;'>V 6.0 - Gemini 3 Hybrid Engine</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; font-size: 10px; color: gray;'>V 7.0 - Hybrid API-Sports & Gemini Engine</p>", unsafe_allow_html=True)
