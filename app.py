@@ -1,112 +1,47 @@
 import streamlit as st
+import datetime
 import requests
 import google.generativeai as genai
-import datetime
 import random
 
-# --- 1. UI CONFIGURATION (Neon Style) ---
-st.set_page_config(page_title="Football Predictions Bot 2026", layout="centered")
-
-st.markdown("""
-    <style>
-    .stApp { background-color: #000000; color: white; }
-    
-    /* Input Boxes */
-    div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
-        background-color: #111 !important;
-        border: 2px solid #39FF14 !important;
-        border-radius: 12px !important;
-    }
-    
-    /* Green Button (Check Matches) */
-    div.stButton > button:first-child {
-        background-color: #39FF14 !important;
-        color: black !important;
-        font-weight: bold !important;
-        width: 100% !important;
-        border-radius: 10px !important;
-    }
-
-    /* Orange Button (Generate Predictions) */
-    div.stButton > button:last-child {
-        background: linear-gradient(180deg, #FF8C00 0%, #FF4500 100%) !important;
-        color: white !important;
-        font-size: 22px !important;
-        font-weight: bold !important;
-        width: 100% !important;
-        border-radius: 20px !important;
-        height: 60px !important;
-    }
-
-    .match-box {
-        background-color: #1a1a1a;
-        padding: 15px;
-        border-radius: 10px;
-        border-left: 5px solid #39FF14;
-        margin-bottom: 10px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 2. API FUNCTIONS ---
-
-def get_rotated_model():
-    keys = [st.secrets["GEMINI_KEY_1"], st.secrets["GEMINI_KEY_2"], st.secrets["GEMINI_KEY_3"]]
-    genai.configure(api_key=random.choice(keys))
-    return genai.GenerativeModel('gemini-1.5-flash')
-
-def get_live_matches(league_id, date_str):
-    url = "https://v3.football.api-sports.io/fixtures"
-    headers = {'x-apisports-key': st.secrets["APISPORTS_KEY"]}
-    # ၂၀၂၅-၂၆ ရာသီအတွက် season ကို ၂၀၂၅ လို့ထားရပါမယ်
-    params = {'league': league_id, 'season': 2025, 'date': date_str}
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        return response.json().get('response', [])
-    except:
-        return []
-
-# --- 3. UI LAYOUT ---
+# ၁။ CSS ချိတ်ဆက်ခြင်း
+with open("style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 st.title("Football Predictions")
 
-# Match Finder Section
-leagues = {"Premier League": 39, "La Liga": 140, "Serie A": 135, "Bundesliga": 78, "Champions League": 2}
-c1, c2 = st.columns(2)
-with c1:
-    sel_league = st.selectbox("Select League", list(leagues.keys()))
-with c2:
-    sel_date = st.date_input("Select Date", datetime.date.today())
+# ၂။ League ၆ ခု စာရင်း (API ID များဖြင့်)
+league_map = {
+    "Premier League": 39,
+    "Champions League": 2,
+    "La Liga": 140,
+    "Bundesliga": 78,
+    "Serie A": 135,
+    "Ligue 1": 61
+}
 
-# Check Matches Button
-if st.button("Check Matches Now"):
-    with st.spinner('ပွဲစဉ်များ ရှာဖွေနေပါသည်...'):
-        matches = get_live_matches(leagues[sel_league], sel_date.strftime('%Y-%m-%d'))
-        if matches:
-            for m in matches:
-                st.markdown(f"""
-                <div class='match-box'>
-                    <b>{m['teams']['home']['name']} vs {m['teams']['away']['name']}</b><br>
-                    <small>Time: {m['fixture']['date'][11:16]} UTC</small>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.warning("ယနေ့အတွက် ပွဲစဉ်များ ရှာမတွေ့ပါ။")
+# ၃။ UI Layout (League ရွေးရန်)
+st.markdown("<p style='margin-bottom:0;'>Select League</p>", unsafe_allow_html=True)
+selected_league_name = st.selectbox(
+    "League Selector",
+    options=list(league_map.keys()),
+    label_visibility="collapsed"
+)
 
-st.write("---")
+# ရွေးထားတဲ့ League ရဲ့ ID ကို သိမ်းထားခြင်း (နောက်ပိုင်း API ခေါ်ဖို့)
+selected_league_id = league_map[selected_league_name]
 
-# Prediction Section
-st.markdown("<h3 style='color:#39FF14; text-align:center;'>Select Team for Analysis</h3>", unsafe_allow_html=True)
-team_list = ["Arsenal", "Man City", "Liverpool", "Real Madrid", "Barcelona", "Man Utd", "Chelsea", "Spurs", "Inter Milan", "Bayern Munich"]
-col1, col2 = st.columns(2)
-with col1:
-    home = st.selectbox("HOME TEAM", team_list, key="h")
-with col2:
-    away = st.selectbox("AWAY TEAM", team_list, index=1, key="a")
+# ၄။ Date ရွေးရန်
+st.markdown("<p style='margin-bottom:0; margin-top:10px;'>Select Date</p>", unsafe_allow_html=True)
+sel_date = st.date_input(
+    "Date Selector", 
+    value=datetime.date(2026, 1, 17),
+    label_visibility="collapsed"
+)
 
-if st.button("Generate Predictions"):
-    model = get_rotated_model()
-    with st.spinner('AI ဖြင့် ခွဲခြမ်းစိတ်ဖြာနေပါသည်...'):
+# ၅။ Check Match Button (Purple Neon)
+if st.button("Check Match"):
+    st.write(f"Selected League ID: {selected_league_id} for {sel_date}")
         try:
             prompt = f"Predict the score and winner for {home} vs {away} in {sel_league}. Write in Burmese."
             response = model.generate_content(prompt)
