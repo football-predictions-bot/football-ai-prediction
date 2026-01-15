@@ -1,45 +1,40 @@
 import streamlit as st
 import datetime
 
-# ၁။ CSS ချိတ်ဆက်ခြင်း (local_css function မလိုဘဲ တိုက်ရိုက်ဖတ်နည်း)
-try:
-    with open("style.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-except FileNotFoundError:
-    st.error("style.css ဖိုင်ကို ရှာမတွေ့ပါ။ Folder ထဲမှာ style.css ရှိမရှိ စစ်ပေးပါ။")
+# CSS ချိတ်ဆက်ခြင်း
+with open("style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 st.title("Football Predictions")
 
-# ၂။ League ၆ ခု စာရင်း
-league_map = {
-    "Premier League": 39,
-    "Champions League": 2,
-    "La Liga": 140,
-    "Bundesliga": 78,
-    "Serie A": 135,
-    "Ligue 1": 61
-}
+# ၁။ Input Section
+st.markdown("<p style='margin-bottom:5px;'>Select League</p>", unsafe_allow_html=True)
+st.selectbox("League", ["Premier League", "Champions League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"], label_visibility="collapsed")
 
-# ၃။ UI Layout (League ရွေးရန်)
-st.markdown("<p style='margin-bottom:0;'>Select League</p>", unsafe_allow_html=True)
-selected_league_name = st.selectbox(
-    "League Selector",
-    options=list(league_map.keys()),
-    label_visibility="collapsed"
-)
+st.markdown("<p style='margin-bottom:5px; margin-top:10px;'>Select Date</p>", unsafe_allow_html=True)
+st.date_input("Date", value=datetime.date(2026, 1, 17), label_visibility="collapsed")
 
-# ၄။ Date ရွေးရန်
-st.markdown("<p style='margin-bottom:0; margin-top:10px;'>Select Date</p>", unsafe_allow_html=True)
-sel_date = st.date_input(
-    "Date Selector", 
-    value=datetime.date(2026, 1, 17),
-    label_visibility="collapsed"
-)
+# ၂။ Check Match ခလုတ် (Purple Glossy)
+st.button("Check Match")
 
-# ၅။ Check Match Button
-if st.button("Check Match"):
-    # ဒီနေရာမှာ API ကနေ ပွဲစဉ်တွေ ဆွဲထုတ်တဲ့ logic လာပါမယ်
-    st.info(f"{selected_league_name} ရဲ့ {sel_date} ပွဲစဉ်များကို ရှာဖွေနေပါသည်...")
-
-st.write("---")
+# ၃။ Select Team Header
 st.markdown("<h3>Select Team</h3>", unsafe_allow_html=True)
+
+# ၄။ Team Selection UI (VS ပုံစံ)
+st.markdown("""
+    <div class="team-container">
+        <div style="text-align:center; font-weight:bold;">HOME TEAM</div>
+        <div class="vs-ball">VS</div>
+        <div style="text-align:center; font-weight:bold;">AWAY TEAM</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Dropdowns (Home/Away အသင်းရွေးရန်)
+c1, c2 = st.columns(2)
+with c1:
+    st.selectbox("H", ["Man Utd", "Arsenal", "Liverpool"], key="h", label_visibility="collapsed")
+with c2:
+    st.selectbox("A", ["Man City", "Chelsea", "Spurs"], key="a", label_visibility="collapsed")
+
+# ၅။ Predictions ခလုတ် (Orange Glossy)
+st.button("Predictions")
