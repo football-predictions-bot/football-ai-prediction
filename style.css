@@ -1,56 +1,36 @@
-/* Background */
-.stApp {
-    background-color: #000000;
+/* Select Team Title */
+h3 {
+    color: #39FF14 !important;
+    text-align: center !important;
+    font-weight: bold;
+    margin-bottom: 5px; /* Box နဲ့ ကပ်သွားအောင် */
 }
 
-/* Dropdowns Style (Box ထဲမှာရော အပြင်မှာပါ တူအောင်) */
-div[data-baseweb="select"] > div {
-    background-color: #111 !important;
-    border: 2px solid #39FF14 !important;
-    border-radius: 10px !important;
-    box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
-}
-
-/* Team Container (Purple Neon Box) */
+/* ခရမ်းရောင် Box - တစ်ခုတည်းသော Main Container */
 .team-container {
     border: 3px solid #bc13fe !important;
-    border-radius: 25px !important;
+    border-radius: 20px !important;
     background-color: #0a0a0a !important;
-    box-shadow: 0 0 25px rgba(188, 19, 254, 0.6) !important;
+    box-shadow: 0 0 20px rgba(188, 19, 254, 0.5) !important;
     padding: 20px;
-    margin-top: 10px;
-    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
-/* VS Ball Design */
+/* VS Ball Glow */
 .vs-ball {
-    width: 65px;
-    height: 65px;
+    width: 60px;
+    height: 60px;
     background: linear-gradient(90deg, #39FF14 50%, #FF4500 50%);
     border-radius: 50%;
     border: 2px solid white;
-    box-shadow: 0 0 15px white;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 900;
     color: black;
-    margin: 15px auto; /* အလယ်ဗဟိုကျအောင် */
-}
-
-/* Buttons */
-div.stButton > button:first-of-type { /* Check Match */
-    background: linear-gradient(180deg, #d033ff 0%, #8a2be2 100%) !important;
-    border-radius: 15px !important;
-    box-shadow: 0 0 20px rgba(188, 19, 254, 0.5), inset 0 2px 10px rgba(255,255,255,0.4) !important;
-    color: white !important;
-}
-
-div.stButton > button:last-of-type { /* Predictions */
-    background: linear-gradient(180deg, #ff9d00 0%, #ff4500 100%) !important;
-    border-radius: 20px !important;
-    height: 65px !important;
-    font-size: 24px !important;
-    box-shadow: 0 5px 25px rgba(255, 69, 0, 0.6), inset 0 2px 10px rgba(255,255,255,0.5) !important;
-    border: none !important;
+    margin: 15px 0;
 }
