@@ -27,7 +27,7 @@ st.markdown('<div class="btn-green-glossy">Check Matches Now</div>', unsafe_allo
 # ၄။ Select Team Title
 st.markdown('<div class="title-style" style="font-size:45px; margin-top:20px;">Select Team</div>', unsafe_allow_html=True)
 
-# Premier League အသင်း ၂၀ စာရင်း
+# Premier League အသင်း ၂၀
 pl_teams = [
     "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton & Hove Albion",
     "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham",
@@ -35,7 +35,7 @@ pl_teams = [
     "Nottingham Forest", "Sunderland", "Tottenham Hotspur", "West Ham United", "Wolverhampton"
 ]
 
-# Champions League အသင်း ၃၆ သင်းစာရင်း
+# Champions League အသင်း ၃၆ သင်း
 cl_teams = [
     "AS Monaco", "Ajax Amsterdam", "Arsenal", "Atalanta", "Athletic Club",
     "Atlético Madrid", "Barcelona", "Bayer Leverkusen", "Bayern Munich", "Benfica",
@@ -46,7 +46,7 @@ cl_teams = [
     "Real Madrid", "Slavia Prague", "Sporting CP", "Tottenham Hotspur", "Union St.-Gilloise", "Villarreal"
 ]
 
-# La Liga အသင်း ၂၀ စာရင်း
+# La Liga အသင်း ၂၀
 la_liga_teams = [
     "Alavés", "Athletic Club", "Atlético Madrid", "Barcelona", "Celta Vigo",
     "Elche", "Espanyol", "Getafe", "Girona", "Levante",
@@ -54,7 +54,7 @@ la_liga_teams = [
     "Real Oviedo", "Real Sociedad", "Sevilla", "Valencia", "Villarreal"
 ]
 
-# Bundesliga အသင်း ၁၈ သင်းစာရင်း
+# Bundesliga အသင်း ၁၈ သင်း
 bundesliga_teams = [
     "1. FC Heidenheim 1846", "1. FC Union Berlin", "Bayer Leverkusen", "Bayern Munich",
     "Borussia Dortmund", "Borussia Mönchengladbach", "Eintracht Frankfurt", "FC Augsburg",
@@ -62,17 +62,23 @@ bundesliga_teams = [
     "TSG Hoffenheim", "VfB Stuttgart", "VfL Wolfsburg", "Werder Bremen"
 ]
 
-# Series A အသင်း ၂၀ စာရင်း
+# Series A အသင်း ၂၀
 series_a_teams = [
     "AC Milan", "AS Roma", "Atalanta", "Bologna", "Cagliari", "Como", "Cremonese",
     "Fiorentina", "Genoa", "Hellas Verona", "Internazionale", "Juventus", "Lazio",
     "Lecce", "Napoli", "Parma", "Pisa", "Sassuolo", "Torino", "Udinese"
 ]
 
-# ၅။ Home vs Away Section
+# Ligue 1 အသင်း ၁၈ သင်း
+ligue_1_teams = [
+    "AJ Auxerre", "AS Monaco", "Angers", "Brest", "Le Havre AC", "Lens", "Lille",
+    "Lorient", "Lyon", "Marseille", "Metz", "Nantes", "Nice", "Paris FC",
+    "Paris Saint-Germain (PSG)", "Stade Rennais", "Strasbourg", "Toulouse"
+]
+
+# ၅။ Home vs Away Section (Logic)
 c1, cvs, c2 = st.columns([2, 1, 2])
 
-# League အလိုက် အသင်းစာရင်း ပြောင်းလဲခြင်း Logic
 if league == "Premier League":
     current_teams = pl_teams
 elif league == "Champions League":
@@ -83,6 +89,8 @@ elif league == "Bundesliga":
     current_teams = bundesliga_teams
 elif league == "Series A":
     current_teams = series_a_teams
+elif league == "Ligue 1":
+    current_teams = ligue_1_teams
 else:
     current_teams = ["Select Team"]
 
