@@ -2,10 +2,9 @@ import streamlit as st
 import datetime
 import requests
 
-# ၁။ Dictionary logic
+# ၁။ Dictionary & Session State (ဘာမှမပြောင်းလဲပါ)
 if 'lang' not in st.session_state:
     st.session_state.lang = 'EN'
-
 if 'team_list' not in st.session_state:
     st.session_state.team_list = ["Select Team"]
 
@@ -14,35 +13,26 @@ def toggle_lang():
 
 d = {
     'EN': {
-        'title1': 'Predictions',
-        'sel_league': 'Select League',
-        'sel_date': 'Select Date',
-        'btn_check': 'Check Matches Now',
-        'title2': 'Select Team',
-        'home': 'HOME TEAM',
-        'away': 'AWAY TEAM',
-        'btn_gen': 'Generate Predictions'
+        'title1': 'Predictions', 'sel_league': 'Select League', 'sel_date': 'Select Date',
+        'btn_check': 'Check Matches Now', 'title2': 'Select Team',
+        'home': 'HOME TEAM', 'away': 'AWAY TEAM', 'btn_gen': 'Generate Predictions'
     },
     'MM': {
-        'title1': 'ပွဲကြိုခန့်မှန်းချက်များ',
-        'sel_league': 'လိဂ်ကို ရွေးချယ်ပါ',
-        'sel_date': 'ရက်စွဲကို ရွေးချယ်ပါ',
-        'btn_check': 'ပွဲစဉ်များကို စစ်ဆေးမည်',
-        'title2': 'အသင်းကို ရွေးချယ်ပါ',
-        'home': 'အိမ်ရှင်အသင်း',
-        'away': 'ဧည့်သည်အသင်း',
-        'btn_gen': 'ခန့်မှန်းချက် ထုတ်ယူမည်'
+        'title1': 'ပွဲကြိုခန့်မှန်းချက်များ', 'sel_league': 'လိဂ်ကို ရွေးချယ်ပါ', 'sel_date': 'ရက်စွဲကို ရွေးချယ်ပါ',
+        'btn_check': 'ပွဲစဉ်များကို စစ်ဆေးမည်', 'title2': 'အသင်းကို ရွေးချယ်ပါ',
+        'home': 'အိမ်ရှင်အသင်း', 'away': 'ဧည့်သည်အသင်း', 'btn_gen': 'ခန့်မှန်းချက် ထုတ်ယူမည်'
     }
 }
 lang = st.session_state.lang
 
-league_ids = {
-    "Premier League": 39,
-    "Champions League": 2,
-    "La Liga": 140,
-    "Bundesliga": 78,
-    "Series A": 135,
-    "Ligue 1": 61
+# Football-Data.org အတွက် သီးသန့် League Codes (ဒါပြောင်းသွားပါတယ်)
+league_codes = {
+    "Premier League": "PL",
+    "Champions League": "CL",
+    "La Liga": "PD",
+    "Bundesliga": "BL1",
+    "Series A": "SA",
+    "Ligue 1": "FL1"
 }
 
 with open("style.css") as f:
@@ -56,55 +46,44 @@ st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_
 
 # ၂။ Select League & Date
 st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</p>', unsafe_allow_html=True)
-league = st.selectbox("L", list(league_ids.keys()), label_visibility="collapsed")
+league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
-
-# စမ်းသပ်ရန်အတွက် min_value ကို ခေတ္တဖြုတ်ထားပါသည် (၂၀၂၄ ရက်စွဲရွေးရန်)
 sel_date = st.date_input("D", value=datetime.date.today(), label_visibility="collapsed")
 
-# ၃။ Green Glossy Button
+# ၃။ Check Matches Now (API Logic အသစ်)
 if st.button(d[lang]["btn_check"]):
-    with st.spinner('Checking API...'):
+    with st.spinner('Checking Matches via Football-Data.org...'):
         try:
-            url = "https://v3.football.api-sports.io/fixtures"
-            headers = {
-                'x-rapidapi-key': st.secrets["api_keys"]["APISPORTS_KEY_1"],
-                'x-rapidapi-host': 'v3.football.api-sports.io'
-            }
+            # Secrets ထဲက Key အသစ်ကို ယူသုံးထားပါတယ်
+            token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
+            date_str = sel_date.strftime('%Y-%m-%d')
             
-            # Season Logic
-            current_season = sel_date.year if sel_date.month >= 8 else sel_date.year - 1
+            # Football-Data.org ရဲ့ API Endpoint ပုံစံ
+            url = f"https://api.football-data.org/v4/competitions/{league_codes[league]}/matches?dateFrom={date_str}&dateTo={date_str}"
+            headers = {'X-Auth-Token': token}
             
-            params = {
-                'league': league_ids[league],
-                'season': current_season,
-                'date': sel_date.strftime('%Y-%m-%d')
-            }
-            
-            response = requests.get(url, headers=headers, params=params)
+            response = requests.get(url, headers=headers)
             data = response.json()
             
-            # Debug Info ပြရန် (ပွဲထွက်လာလျှင် ဒါကို ပြန်ဖြုတ်ပါ)
-            st.write("Debug Info:", data)
-            
-            fixtures = data.get('response', [])
-            if fixtures:
+            matches = data.get('matches', [])
+            if matches:
                 teams = set()
-                for fxt in fixtures:
-                    teams.add(fxt['teams']['home']['name'])
-                    teams.add(fxt['teams']['away']['name'])
+                for m in matches:
+                    teams.add(m['homeTeam']['name'])
+                    teams.add(m['awayTeam']['name'])
                 st.session_state.team_list = sorted(list(teams))
-                st.success(f"Found {len(fixtures)} matches!")
+                st.success(f"Found {len(matches)} matches!")
             else:
                 st.session_state.team_list = ["No matches found"]
-                st.warning("No matches found for this date in API.")
+                st.warning(f"No matches found for {league} on this date.")
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"API Connection Error: {str(e)}")
 
+# ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# ၅။ Home vs Away Section
+# ၅။ Home vs Away Section (ဘာမှမပြောင်းလဲပါ)
 c1, cvs, c2 = st.columns([2, 1, 2])
 current_teams = st.session_state.team_list
 
