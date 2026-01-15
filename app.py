@@ -46,6 +46,14 @@ cl_teams = [
     "Real Madrid", "Slavia Prague", "Sporting CP", "Tottenham Hotspur", "Union St.-Gilloise", "Villarreal"
 ]
 
+# La Liga အသင်း ၂၀ စာရင်း
+la_liga_teams = [
+    "Alavés", "Athletic Club", "Atlético Madrid", "Barcelona", "Celta Vigo",
+    "Elche", "Espanyol", "Getafe", "Girona", "Levante",
+    "Mallorca", "Osasuna", "Rayo Vallecano", "Real Betis", "Real Madrid",
+    "Real Oviedo", "Real Sociedad", "Sevilla", "Valencia", "Villarreal"
+]
+
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
 
@@ -54,6 +62,8 @@ if league == "Premier League":
     current_teams = pl_teams
 elif league == "Champions League":
     current_teams = cl_teams
+elif league == "La Liga":
+    current_teams = la_liga_teams
 else:
     current_teams = ["Select Team"]
 
