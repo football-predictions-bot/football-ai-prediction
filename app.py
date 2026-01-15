@@ -19,7 +19,8 @@ st.selectbox("L", [
 ], label_visibility="collapsed")
 
 st.markdown('<p style="color:#aaa; margin-left:15px; margin-top:15px;">Select Date</p>', unsafe_allow_html=True)
-st.date_input("D", value=datetime.date(2026, 1, 1), label_visibility="collapsed")
+# ဒီနေ့ရက်စွဲကို နေ့တိုင်း အလိုအလျောက် update ဖြစ်အောင် ပြင်လိုက်ပါပြီ
+st.date_input("D", value=datetime.date.today(), label_visibility="collapsed")
 
 # ၃။ Green Glossy Button
 st.markdown('<div class="btn-green-glossy">Check Matches Now</div>', unsafe_allow_html=True)
