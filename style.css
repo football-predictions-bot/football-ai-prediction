@@ -1,63 +1,31 @@
-/* Background & Fonts */
+/* Background */
 .stApp {
     background-color: #000000;
-    color: white;
-    font-family: 'Inter', sans-serif;
 }
 
-/* Titles */
-h1 {
-    color: white;
-    text-align: center;
-    font-weight: 800;
-}
-
-h3 {
-    color: #39FF14 !important;
-    text-align: center;
-    font-weight: bold;
-    margin-top: 25px;
-}
-
-/* Select League & Date (Neon Green Border) */
-div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
-    background-color: #1a1a1a !important;
+/* Dropdowns Style (Box ထဲမှာရော အပြင်မှာပါ တူအောင်) */
+div[data-baseweb="select"] > div {
+    background-color: #111 !important;
     border: 2px solid #39FF14 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
+    border-radius: 10px !important;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
 }
 
-/* Check Match Button (Purple Neon Glossy) */
-/* Streamlit မှာ ပထမဆုံး Button ကို သတ်မှတ်ခြင်း */
-div.stButton > button:first-child, div.stButton > button[kind="primary"] {
-    background: linear-gradient(180deg, #9D50BB 0%, #6E48AA 100%) !important;
-    color: white !important;
-    border: 2px solid #BC13FE !important;
-    border-radius: 18px !important;
-    height: 55px !important;
-    font-size: 20px !important;
-    font-weight: bold !important;
-    box-shadow: 0 0 20px rgba(188, 19, 254, 0.7), inset 0 2px 8px rgba(255,255,255,0.4) !important;
-    width: 100% !important;
-}
-
-/* VS Team Container (Purple Neon Border) */
+/* Team Container (Purple Neon Box) */
 .team-container {
-    border: 3px solid #BC13FE !important;
-    border-radius: 20px !important;
-    background-color: rgba(10, 10, 10, 0.8) !important;
-    padding: 25px;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    box-shadow: 0 0 15px rgba(188, 19, 254, 0.5) !important;
-    margin: 20px 0;
+    border: 3px solid #bc13fe !important;
+    border-radius: 25px !important;
+    background-color: #0a0a0a !important;
+    box-shadow: 0 0 25px rgba(188, 19, 254, 0.6) !important;
+    padding: 20px;
+    margin-top: 10px;
+    margin-bottom: 20px;
 }
 
-/* VS Ball Icon (Green/Orange split) */
+/* VS Ball Design */
 .vs-ball {
-    width: 70px;
-    height: 70px;
+    width: 65px;
+    height: 65px;
     background: linear-gradient(90deg, #39FF14 50%, #FF4500 50%);
     border-radius: 50%;
     border: 2px solid white;
@@ -67,19 +35,22 @@ div.stButton > button:first-child, div.stButton > button[kind="primary"] {
     justify-content: center;
     font-weight: 900;
     color: black;
-    font-size: 20px;
+    margin: 15px auto; /* အလယ်ဗဟိုကျအောင် */
 }
 
-/* Predictions Button (Deep Orange Glossy) */
-/* Streamlit မှာ နောက်ဆုံး Button ကို သတ်မှတ်ခြင်း */
-div.stButton > button:last-child {
-    background: linear-gradient(180deg, #FF6A00 0%, #EE0979 100%) !important;
+/* Buttons */
+div.stButton > button:first-of-type { /* Check Match */
+    background: linear-gradient(180deg, #d033ff 0%, #8a2be2 100%) !important;
+    border-radius: 15px !important;
+    box-shadow: 0 0 20px rgba(188, 19, 254, 0.5), inset 0 2px 10px rgba(255,255,255,0.4) !important;
     color: white !important;
-    border: none !important;
+}
+
+div.stButton > button:last-of-type { /* Predictions */
+    background: linear-gradient(180deg, #ff9d00 0%, #ff4500 100%) !important;
     border-radius: 20px !important;
     height: 65px !important;
     font-size: 24px !important;
-    font-weight: 800 !important;
-    box-shadow: 0 5px 25px rgba(238, 9, 121, 0.6), inset 0 2px 10px rgba(255,255,255,0.5) !important;
-    width: 100% !important;
+    box-shadow: 0 5px 25px rgba(255, 69, 0, 0.6), inset 0 2px 10px rgba(255,255,255,0.5) !important;
+    border: none !important;
 }
