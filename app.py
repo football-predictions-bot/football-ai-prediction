@@ -7,34 +7,35 @@ with open("style.css") as f:
 
 st.title("Football Predictions")
 
-# ၁။ Input Section
-st.markdown("<p style='margin-bottom:5px;'>Select League</p>", unsafe_allow_html=True)
-st.selectbox("League", ["Premier League", "Champions League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"], label_visibility="collapsed")
+# ၁။ League & Date
+sel_league = st.selectbox("Select League", ["Premier League", "Champions League", "La Liga", "Bundesliga", "Serie A", "Ligue 1"], label_visibility="collapsed")
+sel_date = st.date_input("Select Date", value=datetime.date(2026, 1, 17), label_visibility="collapsed")
 
-st.markdown("<p style='margin-bottom:5px; margin-top:10px;'>Select Date</p>", unsafe_allow_html=True)
-st.date_input("Date", value=datetime.date(2026, 1, 17), label_visibility="collapsed")
-
-# ၂။ Check Match ခလုတ် (Purple Glossy)
+# ၂။ Check Match ခလုတ်
 st.button("Check Match")
 
-# ၃။ Select Team Header
 st.markdown("<h3>Select Team</h3>", unsafe_allow_html=True)
 
-# ၄။ Team Selection UI (VS ပုံစံ)
-st.markdown("""
-    <div class="team-container">
-        <div style="text-align:center; font-weight:bold;">HOME TEAM</div>
-        <div class="vs-ball">VS</div>
-        <div style="text-align:center; font-weight:bold;">AWAY TEAM</div>
-    </div>
-    """, unsafe_allow_html=True)
+# ၃။ Home Team နဲ့ Away Team ကို Box တစ်ခုတည်းထဲ ထည့်ခြင်း
+with st.container():
+    # HTML/CSS နဲ့ Box ပုံစံဆောက်ခြင်း
+    st.markdown('<div class="team-container">', unsafe_allow_html=True)
+    
+    col1, col_vs, col2 = st.columns([2, 1, 2])
+    
+    with col1:
+        st.markdown("<div style='text-align:center; font-weight:bold; margin-bottom:5px;'>HOME TEAM</div>", unsafe_allow_html=True)
+        h_team = st.selectbox("Home", ["Arsenal", "Liverpool", "Man Utd"], key="h", label_visibility="collapsed")
+        
+    with col_vs:
+        # အလယ်က VS Ball
+        st.markdown('<div class="vs-ball">VS</div>', unsafe_allow_html=True)
+        
+    with col2:
+        st.markdown("<div style='text-align:center; font-weight:bold; margin-bottom:5px;'>AWAY TEAM</div>", unsafe_allow_html=True)
+        a_team = st.selectbox("Away", ["Man City", "Chelsea", "Spurs"], index=1, key="a", label_visibility="collapsed")
+        
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Dropdowns (Home/Away အသင်းရွေးရန်)
-c1, c2 = st.columns(2)
-with c1:
-    st.selectbox("H", ["Man Utd", "Arsenal", "Liverpool"], key="h", label_visibility="collapsed")
-with c2:
-    st.selectbox("A", ["Man City", "Chelsea", "Spurs"], key="a", label_visibility="collapsed")
-
-# ၅။ Predictions ခလုတ် (Orange Glossy)
+# ၄။ Predictions ခလုတ်
 st.button("Predictions")
