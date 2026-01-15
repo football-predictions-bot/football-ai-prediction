@@ -52,7 +52,6 @@ col_space, col_lang = st.columns([8, 2])
 with col_lang:
     st.button("မြန်မာ / EN", on_click=toggle_lang)
 
-# ၁။ Predictions Title
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
 # ၂။ Select League & Date
@@ -60,9 +59,11 @@ st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</
 league = st.selectbox("L", list(league_ids.keys()), label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
-sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
-# ၃။ Green Glossy Button (ဒီနေရာမှာ API စစ်ဆေးတဲ့ code ထည့်ထားပါတယ်)
+# စမ်းသပ်ရန်အတွက် min_value ကို ခေတ္တဖြုတ်ထားပါသည် (၂၀၂၄ ရက်စွဲရွေးရန်)
+sel_date = st.date_input("D", value=datetime.date.today(), label_visibility="collapsed")
+
+# ၃။ Green Glossy Button
 if st.button(d[lang]["btn_check"]):
     with st.spinner('Checking API...'):
         try:
@@ -72,7 +73,7 @@ if st.button(d[lang]["btn_check"]):
                 'x-rapidapi-host': 'v3.football.api-sports.io'
             }
             
-            # ၂၀၂၆ ဇန်နဝါရီအတွက် ၂၀၂၅ season ကို ပြောင်းပေးသော logic
+            # Season Logic
             current_season = sel_date.year if sel_date.month >= 8 else sel_date.year - 1
             
             params = {
@@ -84,8 +85,8 @@ if st.button(d[lang]["btn_check"]):
             response = requests.get(url, headers=headers, params=params)
             data = response.json()
             
-            # API က ဘာပြန်ပေးလဲဆိုတာ Screen ပေါ်မှာ ခေတ္တပြပါမယ် (စစ်ဆေးပြီးရင် ပြန်ဖြုတ်လို့ရပါတယ်)
-            st.write("Debug Info (API Response):", data)
+            # Debug Info ပြရန် (ပွဲထွက်လာလျှင် ဒါကို ပြန်ဖြုတ်ပါ)
+            st.write("Debug Info:", data)
             
             fixtures = data.get('response', [])
             if fixtures:
@@ -97,11 +98,10 @@ if st.button(d[lang]["btn_check"]):
                 st.success(f"Found {len(fixtures)} matches!")
             else:
                 st.session_state.team_list = ["No matches found"]
-                st.warning("No matches found in API response for this date.")
+                st.warning("No matches found for this date in API.")
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-# ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
 # ၅။ Home vs Away Section
