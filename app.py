@@ -54,6 +54,14 @@ la_liga_teams = [
     "Real Oviedo", "Real Sociedad", "Sevilla", "Valencia", "Villarreal"
 ]
 
+# Bundesliga အသင်း ၁၈ သင်းစာရင်း
+bundesliga_teams = [
+    "1. FC Heidenheim 1846", "1. FC Union Berlin", "Bayer Leverkusen", "Bayern Munich",
+    "Borussia Dortmund", "Borussia Mönchengladbach", "Eintracht Frankfurt", "FC Augsburg",
+    "FC Cologne", "Hamburg SV", "Mainz", "RB Leipzig", "SC Freiburg", "St. Pauli",
+    "TSG Hoffenheim", "VfB Stuttgart", "VfL Wolfsburg", "Werder Bremen"
+]
+
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
 
@@ -64,6 +72,8 @@ elif league == "Champions League":
     current_teams = cl_teams
 elif league == "La Liga":
     current_teams = la_liga_teams
+elif league == "Bundesliga":
+    current_teams = bundesliga_teams
 else:
     current_teams = ["Select Team"]
 
