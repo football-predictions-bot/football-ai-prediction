@@ -1,95 +1,82 @@
-/* ၁။ Streamlit default header, footer နဲ့ မလိုအပ်တဲ့ link တွေ အကုန်ဖျောက်မယ် */
-header, footer, .stDeployButton, [data-testid="stHeaderActionElements"], [data-testid="stHeader"] {
-    display: none !important;
-}
-.st-emotion-cache-18ni7ap { display: none !important; }
+/* ၁။ Streamlit UI အပိုတွေအကုန် ဖျောက်မယ် */
+header, footer, .stDeployButton, [data-testid="stHeader"], [data-testid="stHeaderActionElements"] {display: none !important;}
+.stApp { background-color: #000000; }
+.st-emotion-cache-18ni7ap {padding: 0 !important;}
 
-/* ၂။ Main App Background */
-.stApp {
-    background-color: #000000;
-}
-
-/* ၃။ Title Text Gradient (Predictions & Select Team) */
-.gradient-text {
+/* ၂။ Gradient Text (Predictions & Select Team) */
+.title-style {
     text-align: center;
+    font-size: 55px;
     font-weight: 900;
-    background: linear-gradient(to bottom, #FF80FF 0%, #AA00FF 100%);
+    background: linear-gradient(to bottom, #FF80FF 20%, #AA00FF 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 20px;
-    font-family: 'Arial Black', sans-serif;
+    margin: 10px 0;
+    font-family: sans-serif;
 }
 
-/* ၄။ Inputs (League & Date Selection) */
-div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
-    background-color: #111 !important;
+/* ၃။ Select Boxes (Neon Green) */
+div[data-baseweb="select"] > div {
+    background-color: #0c0c0c !important;
     border: 2px solid #39FF14 !important;
     border-radius: 12px !important;
-    box-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
-    color: white !important;
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
 }
 
-/* ၅။ Check Matches Now ခလုတ် (Green Glossy) */
-div.stButton > button:first-of-type {
-    background: linear-gradient(180deg, #00FF00 0%, #008000 100%) !important;
-    color: black !important;
-    height: 65px !important;
-    font-size: 26px !important;
-    font-weight: 900 !important;
-    border-radius: 35px !important;
-    /* အပေါ်က inset အဖြူရောင်က Glossy ဖြစ်စေတာပါ */
-    box-shadow: 0 0 25px rgba(0, 255, 0, 0.5), inset 0 8px 12px rgba(255, 255, 255, 0.7) !important;
-    border: none !important;
-    width: 100% !important;
+/* ၄။ Check Matches Now (Glossy Green) */
+.btn-green-glossy {
+    background: linear-gradient(180deg, #00FF00 0%, #008000 100%);
+    border-radius: 40px;
+    color: black;
+    text-align: center;
+    padding: 15px;
+    font-size: 28px;
+    font-weight: 900;
+    margin: 20px 5px;
+    /* ဖြူပြောင်တဲ့ အလင်းတန်း (Glossy) ထည့်တာ */
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.4), inset 0 10px 15px rgba(255, 255, 255, 0.8);
     cursor: pointer;
 }
 
-/* ၆။ Purple Match Box (Home vs Away) */
-.match-box-ui {
-    border: 3px solid #ff00ff !important;
-    border-radius: 30px !important;
-    padding: 25px;
-    background-color: #000 !important;
-    box-shadow: 0 0 20px rgba(255, 0, 255, 0.5) !important;
-    margin: 15px 0;
+/* ၅။ Purple Match Box (Home vs Away စုစည်းမှု) */
+.match-box-container {
+    border: 3px solid #FF00FF;
+    border-radius: 35px;
+    padding: 30px 15px;
+    margin: 10px 5px;
+    box-shadow: 0 0 25px rgba(255, 0, 255, 0.5);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
 }
 
-/* ၇။ VS Circle (Green/Orange split with White Glow) */
-.vs-circle-ui {
-    width: 70px;
-    height: 70px;
+/* ၆။ VS Ball (White Glow) */
+.vs-ball {
+    width: 75px;
+    height: 75px;
     background: linear-gradient(90deg, #39FF14 50%, #FF4500 50%);
     border-radius: 50%;
     border: 3px solid white;
+    box-shadow: 0 0 25px white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 900;
     color: black;
     font-size: 22px;
-    box-shadow: 0 0 25px white;
-    margin: 0 auto;
 }
 
-/* ၈။ Generate Predictions ခလုတ် (Orange Glossy) */
-div.stButton > button:last-of-type {
-    background: linear-gradient(180deg, #FF9900 0%, #FF4500 100%) !important;
-    color: white !important;
-    height: 80px !important;
-    font-size: 30px !important;
-    font-weight: 900 !important;
-    border-radius: 40px !important;
-    /* အောက်က shadow က Neon Glow ဖြစ်စေပြီး အပေါ်က inset က Glossy ဖြစ်စေပါတယ် */
-    box-shadow: 0 10px 30px rgba(255, 69, 0, 0.6), inset 0 8px 15px rgba(255, 255, 255, 0.7) !important;
-    border: none !important;
-    width: 100% !important;
-    margin-top: 20px !important;
-}
-
-/* Labels for Teams */
-.team-label {
+/* ၇။ Generate Predictions (Glossy Orange) */
+.btn-orange-glossy {
+    background: linear-gradient(180deg, #FF9500 0%, #FF4500 100%);
+    border-radius: 50px;
     color: white;
-    font-weight: bold;
     text-align: center;
-    margin-bottom: 5px;
+    padding: 22px;
+    font-size: 32px;
+    font-weight: 900;
+    margin: 20px 5px;
+    /* ဖြူပြောင်တဲ့ အလင်းတန်း (Glossy) ထည့်တာ */
+    box-shadow: 0 10px 30px rgba(255, 69, 0, 0.5), inset 0 10px 20px rgba(255, 255, 255, 0.8);
+    cursor: pointer;
 }
