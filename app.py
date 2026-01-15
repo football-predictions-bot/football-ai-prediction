@@ -53,7 +53,7 @@ league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapse
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
 sel_date = st.date_input("D", value=datetime.date.today(), label_visibility="collapsed")
 
-# ၃။ Green Glossy Button (Logic & UI Combined)
+# ၃။ Check Matches Now (Green Glossy)
 st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
 if st.button("", key="check_btn_hidden", use_container_width=True):
     with st.spinner('Checking Matches...'):
@@ -96,8 +96,8 @@ with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
     a_team = st.selectbox("A", [t for t in current_teams if t != h_team], key="a", label_visibility="collapsed")
 
-# ၆။ Orange Glossy Button (Logic & UI Combined)
-st.markdown(f'<div class="btn-orange-glossy" style="margin-bottom: 0px;">{d[lang]["btn_gen"]}</div>', unsafe_allow_html=True)
+# ၆။ Orange Glossy Button (Generate Predictions)
+st.markdown(f'<div class="btn-orange-glossy">{d[lang]["btn_gen"]}</div>', unsafe_allow_html=True)
 if st.button("", key="gen_btn_hidden", use_container_width=True):
     if h_team and a_team and h_team != "Select Team" and h_team != "No matches found":
         with st.spinner('AI is thinking...'):
@@ -111,17 +111,3 @@ if st.button("", key="gen_btn_hidden", use_container_width=True):
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-
-# ၇။ Hidden Button Styles (Custom CSS for Glossy Overlay)
-st.markdown("""
-<style>
-div[data-testid="stButton"] > button {
-    height: 50px;
-    background: transparent !important;
-    border: none !important;
-    color: transparent !important;
-    margin-top: -65px;
-    margin-bottom: 20px;
-}
-</style>
-""", unsafe_allow_html=True)
