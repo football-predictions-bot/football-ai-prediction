@@ -1,36 +1,57 @@
-/* Select Team Title */
-h3 {
-    color: #39FF14 !important;
-    text-align: center !important;
-    font-weight: bold;
-    margin-bottom: 5px; /* Box နဲ့ ကပ်သွားအောင် */
+/* ၁။ Streamlit default header, footer, links များကို လုံးဝဖျောက်ခြင်း */
+header {visibility: hidden;}
+.st-emotion-cache-15zrgzn {display: none;}
+.st-emotion-cache-zq59as {display: none;}
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+[data-testid="stHeader"] {display: none;}
+/* Link icon (Anchor) ကို ဖျောက်ရန် */
+.st-emotion-cache-18ni7ap {display: none !important;}
+a.p-link {display: none;}
+
+/* ၂။ Main App Background */
+.stApp {
+    background-color: #000000;
 }
 
-/* ခရမ်းရောင် Box - တစ်ခုတည်းသော Main Container */
+/* ၃။ Select Team Title (အလယ်တည့်တည့်) */
+.select-team-header {
+    color: #39FF14 !important;
+    text-align: center !important;
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* ၄။ Team Container (Purple Box) - Dropdowns များကို ဤထဲမှာပဲ ထည့်မည် */
 .team-container {
     border: 3px solid #bc13fe !important;
     border-radius: 20px !important;
     background-color: #0a0a0a !important;
     box-shadow: 0 0 20px rgba(188, 19, 254, 0.5) !important;
     padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    margin: 10px 0;
+    text-align: center;
 }
 
-/* VS Ball Glow */
+/* ၅။ VS Ball Design */
 .vs-ball {
     width: 60px;
     height: 60px;
     background: linear-gradient(90deg, #39FF14 50%, #FF4500 50%);
     border-radius: 50%;
     border: 2px solid white;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 900;
     color: black;
-    margin: 15px 0;
+    margin: 10px auto;
+}
+
+/* ၆။ Buttons (Glossy Look) */
+div.stButton > button {
+    border-radius: 20px !important;
+    font-weight: bold !important;
 }
