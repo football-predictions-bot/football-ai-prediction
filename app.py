@@ -1,12 +1,11 @@
 import streamlit as st
 import datetime
-import requests  # API ဆွဲရန် ထပ်တိုးထားသည်
+import requests
 
 # ၁။ Dictionary logic
 if 'lang' not in st.session_state:
     st.session_state.lang = 'EN'
 
-# ပွဲစဉ်စာရင်း သိမ်းရန် session state မရှိလျှင် တည်ဆောက်သည်
 if 'team_list' not in st.session_state:
     st.session_state.team_list = ["Select Team"]
 
@@ -37,7 +36,6 @@ d = {
 }
 lang = st.session_state.lang
 
-# League ID mapping (API-Sports IDs)
 league_ids = {
     "Premier League": 39,
     "Champions League": 2,
@@ -50,7 +48,6 @@ league_ids = {
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Language Toggle Button
 col_space, col_lang = st.columns([8, 2])
 with col_lang:
     st.button("မြန်မာ / EN", on_click=toggle_lang)
@@ -65,22 +62,30 @@ league = st.selectbox("L", list(league_ids.keys()), label_visibility="collapsed"
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
 sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
-# ၃။ Green Glossy Button (API Fetching Logic)
+# ၃။ Green Glossy Button (ဒီနေရာမှာ API စစ်ဆေးတဲ့ code ထည့်ထားပါတယ်)
 if st.button(d[lang]["btn_check"]):
-    with st.spinner('Fetching matches...'):
+    with st.spinner('Checking API...'):
         try:
             url = "https://v3.football.api-sports.io/fixtures"
             headers = {
                 'x-rapidapi-key': st.secrets["api_keys"]["APISPORTS_KEY_1"],
                 'x-rapidapi-host': 'v3.football.api-sports.io'
             }
+            
+            # ၂၀၂၆ ဇန်နဝါရီအတွက် ၂၀၂၅ season ကို ပြောင်းပေးသော logic
+            current_season = sel_date.year if sel_date.month >= 8 else sel_date.year - 1
+            
             params = {
                 'league': league_ids[league],
-                'season': sel_date.year,
+                'season': current_season,
                 'date': sel_date.strftime('%Y-%m-%d')
             }
+            
             response = requests.get(url, headers=headers, params=params)
             data = response.json()
+            
+            # API က ဘာပြန်ပေးလဲဆိုတာ Screen ပေါ်မှာ ခေတ္တပြပါမယ် (စစ်ဆေးပြီးရင် ပြန်ဖြုတ်လို့ရပါတယ်)
+            st.write("Debug Info (API Response):", data)
             
             fixtures = data.get('response', [])
             if fixtures:
@@ -92,9 +97,9 @@ if st.button(d[lang]["btn_check"]):
                 st.success(f"Found {len(fixtures)} matches!")
             else:
                 st.session_state.team_list = ["No matches found"]
-                st.warning("No matches for this date.")
+                st.warning("No matches found in API response for this date.")
         except Exception as e:
-            st.error(f"API Error: {str(e)}")
+            st.error(f"Error: {str(e)}")
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
