@@ -96,14 +96,18 @@ else:
 
 with c1:
     st.markdown('<p style="color:white; text-align:center; font-weight:900; font-size:12px;">HOME TEAM</p>', unsafe_allow_html=True)
-    st.selectbox("H", current_teams, key="h", label_visibility="collapsed")
+    # Away မှာ ရွေးထားတဲ့အသင်းကို ဖယ်ထုတ်ထားတဲ့ စာရင်း
+    h_options = [t for t in current_teams if t != st.session_state.get('a')]
+    home_choice = st.selectbox("H", h_options, key="h", label_visibility="collapsed")
 
 with cvs:
     st.markdown('<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="vs-ball">vs</div></div>', unsafe_allow_html=True)
 
 with c2:
     st.markdown('<p style="color:white; text-align:center; font-weight:900; font-size:12px;">AWAY TEAM</p>', unsafe_allow_html=True)
-    st.selectbox("A", current_teams, key="a", label_visibility="collapsed")
+    # Home မှာ ရွေးထားတဲ့အသင်းကို ဖယ်ထုတ်ထားတဲ့ စာရင်း
+    a_options = [t for t in current_teams if t != st.session_state.get('h')]
+    away_choice = st.selectbox("A", a_options, key="a", label_visibility="collapsed")
 
 # ၆။ Orange Glossy Button
 st.markdown('<div class="btn-orange-glossy">Generate Predictions</div>', unsafe_allow_html=True)
