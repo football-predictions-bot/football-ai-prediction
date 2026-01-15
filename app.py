@@ -1,9 +1,14 @@
 import streamlit as st
 import datetime
+import requests  # API ဆွဲရန် ထပ်တိုးထားသည်
 
 # ၁။ Dictionary logic
 if 'lang' not in st.session_state:
     st.session_state.lang = 'EN'
+
+# ပွဲစဉ်စာရင်း သိမ်းရန် session state မရှိလျှင် တည်ဆောက်သည်
+if 'team_list' not in st.session_state:
+    st.session_state.team_list = ["Select Team"]
 
 def toggle_lang():
     st.session_state.lang = 'MM' if st.session_state.lang == 'EN' else 'EN'
@@ -32,10 +37,20 @@ d = {
 }
 lang = st.session_state.lang
 
+# League ID mapping (API-Sports IDs)
+league_ids = {
+    "Premier League": 39,
+    "Champions League": 2,
+    "La Liga": 140,
+    "Bundesliga": 78,
+    "Series A": 135,
+    "Ligue 1": 61
+}
+
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Language Toggle Button (ညာဘက်အပေါ်မှာ ထည့်ထားသည်)
+# Language Toggle Button
 col_space, col_lang = st.columns([8, 2])
 with col_lang:
     st.button("မြန်မာ / EN", on_click=toggle_lang)
@@ -45,42 +60,48 @@ st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_
 
 # ၂။ Select League & Date
 st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</p>', unsafe_allow_html=True)
-league = st.selectbox("L", [
-    "Premier League", 
-    "Champions League", 
-    "La Liga", 
-    "Bundesliga", 
-    "Series A", 
-    "Ligue 1"
-], label_visibility="collapsed")
+league = st.selectbox("L", list(league_ids.keys()), label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
-st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
+sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
-# ၃။ Green Glossy Button
-st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
+# ၃။ Green Glossy Button (API Fetching Logic)
+if st.button(d[lang]["btn_check"]):
+    with st.spinner('Fetching matches...'):
+        try:
+            url = "https://v3.football.api-sports.io/fixtures"
+            headers = {
+                'x-rapidapi-key': st.secrets["api_keys"]["APISPORTS_KEY_1"],
+                'x-rapidapi-host': 'v3.football.api-sports.io'
+            }
+            params = {
+                'league': league_ids[league],
+                'season': sel_date.year,
+                'date': sel_date.strftime('%Y-%m-%d')
+            }
+            response = requests.get(url, headers=headers, params=params)
+            data = response.json()
+            
+            fixtures = data.get('response', [])
+            if fixtures:
+                teams = set()
+                for fxt in fixtures:
+                    teams.add(fxt['teams']['home']['name'])
+                    teams.add(fxt['teams']['away']['name'])
+                st.session_state.team_list = sorted(list(teams))
+                st.success(f"Found {len(fixtures)} matches!")
+            else:
+                st.session_state.team_list = ["No matches found"]
+                st.warning("No matches for this date.")
+        except Exception as e:
+            st.error(f"API Error: {str(e)}")
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# Teams Data
-pl_teams = ["Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton & Hove Albion", "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham", "Leeds United", "Liverpool", "Manchester City", "Manchester United", "Newcastle United", "Nottingham Forest", "Sunderland", "Tottenham Hotspur", "West Ham United", "Wolverhampton"]
-cl_teams = ["AS Monaco", "Ajax Amsterdam", "Arsenal", "Atalanta", "Athletic Club", "Atlético Madrid", "Barcelona", "Bayer Leverkusen", "Bayern Munich", "Benfica", "Bodo/Glimt", "Borussia Dortmund", "Chelsea", "Club Brugge", "Eintracht Frankfurt", "F.C. København", "FK Qarabag", "Galatasaray", "Internazionale", "Juventus", "Kairat Almaty", "Liverpool", "Manchester City", "Marseille", "Napoli", "Newcastle United", "Olympiacos", "PSV Eindhoven", "Pafos", "Paris Saint-Germain", "Real Madrid", "Slavia Prague", "Sporting CP", "Tottenham Hotspur", "Union St.-Gilloise", "Villarreal"]
-la_liga_teams = ["Alavés", "Athletic Club", "Atlético Madrid", "Barcelona", "Celta Vigo", "Elche", "Espanyol", "Getafe", "Girona", "Levante", "Mallorca", "Osasuna", "Rayo Vallecano", "Real Betis", "Real Madrid", "Real Oviedo", "Real Sociedad", "Sevilla", "Valencia", "Villarreal"]
-bundesliga_teams = ["1. FC Heidenheim 1846", "1. FC Union Berlin", "Bayer Leverkusen", "Bayern Munich", "Borussia Dortmund", "Borussia Mönchengladbach", "Eintracht Frankfurt", "FC Augsburg", "FC Cologne", "Hamburg SV", "Mainz", "RB Leipzig", "SC Freiburg", "St. Pauli", "TSG Hoffenheim", "VfB Stuttgart", "VfL Wolfsburg", "Werder Bremen"]
-series_a_teams = ["AC Milan", "AS Roma", "Atalanta", "Bologna", "Cagliari", "Como", "Cremonese", "Fiorentina", "Genoa", "Hellas Verona", "Internazionale", "Juventus", "Lazio", "Lecce", "Napoli", "Parma", "Pisa", "Sassuolo", "Torino", "Udinese"]
-ligue_1_teams = ["AJ Auxerre", "AS Monaco", "Angers", "Brest", "Le Havre AC", "Lens", "Lille", "Lorient", "Lyon", "Marseille", "Metz", "Nantes", "Nice", "Paris FC", "Paris Saint-Germain (PSG)", "Stade Rennais", "Strasbourg", "Toulouse"]
-
-# ၅။ Home vs Away Section (Logic)
+# ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
-
-if league == "Premier League": current_teams = pl_teams
-elif league == "Champions League": current_teams = cl_teams
-elif league == "La Liga": current_teams = la_liga_teams
-elif league == "Bundesliga": current_teams = bundesliga_teams
-elif league == "Series A": current_teams = series_a_teams
-elif league == "Ligue 1": current_teams = ligue_1_teams
-else: current_teams = ["Select Team"]
+current_teams = st.session_state.team_list
 
 with c1:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["home"]}</p>', unsafe_allow_html=True)
