@@ -19,7 +19,8 @@ league = st.selectbox("L", [
 ], label_visibility="collapsed")
 
 st.markdown('<p style="color:#aaa; margin-left:15px; margin-top:15px;">Select Date</p>', unsafe_allow_html=True)
-st.date_input("D", value=datetime.date.today(), label_visibility="collapsed")
+# min_value=datetime.date.today() ထည့်သွင်း၍ Back date များ ရွေးမရအောင် ကန့်သတ်ထားသည်
+st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
 # ၃။ Green Glossy Button
 st.markdown('<div class="btn-green-glossy">Check Matches Now</div>', unsafe_allow_html=True)
@@ -96,7 +97,6 @@ else:
 
 with c1:
     st.markdown('<p style="color:white; text-align:center; font-weight:900; font-size:12px;">HOME TEAM</p>', unsafe_allow_html=True)
-    # Away မှာ ရွေးထားတဲ့အသင်းကို ဖယ်ထုတ်ထားတဲ့ စာရင်း
     h_options = [t for t in current_teams if t != st.session_state.get('a')]
     home_choice = st.selectbox("H", h_options, key="h", label_visibility="collapsed")
 
@@ -105,7 +105,6 @@ with cvs:
 
 with c2:
     st.markdown('<p style="color:white; text-align:center; font-weight:900; font-size:12px;">AWAY TEAM</p>', unsafe_allow_html=True)
-    # Home မှာ ရွေးထားတဲ့အသင်းကို ဖယ်ထုတ်ထားတဲ့ စာရင်း
     a_options = [t for t in current_teams if t != st.session_state.get('h')]
     away_choice = st.selectbox("A", a_options, key="a", label_visibility="collapsed")
 
