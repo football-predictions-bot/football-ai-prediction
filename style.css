@@ -1,79 +1,85 @@
-/* Background တစ်ခုလုံးကို အနက်ရောင်ထားခြင်း */
+/* Background & Fonts */
 .stApp {
     background-color: #000000;
     color: white;
     font-family: 'Inter', sans-serif;
 }
 
-/* Header Title */
+/* Titles */
 h1 {
     color: white;
     text-align: center;
     font-weight: 800;
 }
 
-/* Select League နဲ့ Select Date ဘောင်များ (Neon Green Border) */
-div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
-    background-color: #1a1a1a !important;
-    border: 2px solid #39FF14 !important;
-    border-radius: 15px !important;
-    box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
-}
-
-/* Check Match ခလုတ် (Purple Neon Glossy Style) */
-div.stButton > button:first-child {
-    background: linear-gradient(180deg, #9D50BB 0%, #6E48AA 100%) !important;
-    color: white !important;
-    border: 2px solid #BC13FE !important;
-    border-radius: 20px !important;
-    height: 55px !important;
-    font-size: 22px !important;
-    font-weight: bold !important;
-    box-shadow: 0 0 20px rgba(188, 19, 254, 0.5);
-    text-transform: none !important;
-    transition: 0.3s;
-}
-
-/* Select Team စာသား (Neon Green) */
 h3 {
     color: #39FF14 !important;
     text-align: center;
     font-weight: bold;
-    margin-top: 30px;
+    margin-top: 25px;
 }
 
-/* Home Team vs Away Team ဘောင် (Purple/Neon Border) */
+/* Select League & Date (Neon Green Border) */
+div[data-baseweb="select"] > div, div[data-baseweb="input"] > div {
+    background-color: #1a1a1a !important;
+    border: 2px solid #39FF14 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
+}
+
+/* Check Match Button (Purple Neon Glossy) */
+/* Streamlit မှာ ပထမဆုံး Button ကို သတ်မှတ်ခြင်း */
+div.stButton > button:first-child, div.stButton > button[kind="primary"] {
+    background: linear-gradient(180deg, #9D50BB 0%, #6E48AA 100%) !important;
+    color: white !important;
+    border: 2px solid #BC13FE !important;
+    border-radius: 18px !important;
+    height: 55px !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    box-shadow: 0 0 20px rgba(188, 19, 254, 0.7), inset 0 2px 8px rgba(255,255,255,0.4) !important;
+    width: 100% !important;
+}
+
+/* VS Team Container (Purple Neon Border) */
 .team-container {
-    border: 3px solid #BC13FE;
-    border-radius: 25px;
-    padding: 20px;
-    background-color: rgba(20, 20, 20, 0.8);
+    border: 3px solid #BC13FE !important;
+    border-radius: 20px !important;
+    background-color: rgba(10, 10, 10, 0.8) !important;
+    padding: 25px;
     display: flex;
     justify-content: space-around;
     align-items: center;
-    margin-bottom: 20px;
-    box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+    box-shadow: 0 0 15px rgba(188, 19, 254, 0.5) !important;
+    margin: 20px 0;
 }
 
-/* Predictions ခလုတ် (Deep Orange Glossy Style) */
+/* VS Ball Icon (Green/Orange split) */
+.vs-ball {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(90deg, #39FF14 50%, #FF4500 50%);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 15px white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    color: black;
+    font-size: 20px;
+}
+
+/* Predictions Button (Deep Orange Glossy) */
+/* Streamlit မှာ နောက်ဆုံး Button ကို သတ်မှတ်ခြင်း */
 div.stButton > button:last-child {
     background: linear-gradient(180deg, #FF6A00 0%, #EE0979 100%) !important;
     color: white !important;
     border: none !important;
-    border-radius: 25px !important;
+    border-radius: 20px !important;
     height: 65px !important;
-    font-size: 26px !important;
+    font-size: 24px !important;
     font-weight: 800 !important;
-    box-shadow: 0 10px 20px rgba(238, 9, 121, 0.4);
-    margin-top: 20px;
+    box-shadow: 0 5px 25px rgba(238, 9, 121, 0.6), inset 0 2px 10px rgba(255,255,255,0.5) !important;
+    width: 100% !important;
 }
-
-/* Match Box (Result တွေပြတဲ့အခါ သုံးဖို့) */
-.match-box {
-    background-color: #111;
-    padding: 15px;
-    border-radius: 12px;
-    border-left: 5px solid #39FF14;
-    margin-bottom: 10px;
-}
-
