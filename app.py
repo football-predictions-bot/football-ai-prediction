@@ -62,6 +62,13 @@ bundesliga_teams = [
     "TSG Hoffenheim", "VfB Stuttgart", "VfL Wolfsburg", "Werder Bremen"
 ]
 
+# Series A အသင်း ၂၀ စာရင်း
+series_a_teams = [
+    "AC Milan", "AS Roma", "Atalanta", "Bologna", "Cagliari", "Como", "Cremonese",
+    "Fiorentina", "Genoa", "Hellas Verona", "Internazionale", "Juventus", "Lazio",
+    "Lecce", "Napoli", "Parma", "Pisa", "Sassuolo", "Torino", "Udinese"
+]
+
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
 
@@ -74,6 +81,8 @@ elif league == "La Liga":
     current_teams = la_liga_teams
 elif league == "Bundesliga":
     current_teams = bundesliga_teams
+elif league == "Series A":
+    current_teams = series_a_teams
 else:
     current_teams = ["Select Team"]
 
