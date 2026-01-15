@@ -1,57 +1,81 @@
-/* ၁။ Streamlit default header, footer, links များကို လုံးဝဖျောက်ခြင်း */
-header {visibility: hidden;}
-.st-emotion-cache-15zrgzn {display: none;}
-.st-emotion-cache-zq59as {display: none;}
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-[data-testid="stHeader"] {display: none;}
-/* Link icon (Anchor) ကို ဖျောက်ရန် */
-.st-emotion-cache-18ni7ap {display: none !important;}
-a.p-link {display: none;}
+/* ၁။ မလိုအပ်တဲ့ Streamlit UI တွေ အကုန်ဖျောက်မယ် */
+header, footer, .stDeployButton, [data-testid="stHeaderActionElements"] {display: none !important;}
+[data-testid="stHeader"] {background: transparent !important;}
 
-/* ၂။ Main App Background */
-.stApp {
-    background-color: #000000;
-}
+/* ၂။ Main Background */
+.stApp { background-color: #000000; }
 
-/* ၃။ Select Team Title (အလယ်တည့်တည့်) */
-.select-team-header {
-    color: #39FF14 !important;
-    text-align: center !important;
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-/* ၄။ Team Container (Purple Box) - Dropdowns များကို ဤထဲမှာပဲ ထည့်မည် */
-.team-container {
-    border: 3px solid #bc13fe !important;
-    border-radius: 20px !important;
-    background-color: #0a0a0a !important;
-    box-shadow: 0 0 20px rgba(188, 19, 254, 0.5) !important;
-    padding: 20px;
-    margin: 10px 0;
+/* ၃။ Title Gradient (ပုံထဲကအတိုင်း ရောင်စုံပြေးနေအောင်) */
+.main-title, .select-team-title {
     text-align: center;
+    font-weight: 900;
+    background: linear-gradient(to bottom, #FF80FF, #AA00FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 20px;
+}
+.main-title { font-size: 55px; }
+.select-team-title { font-size: 45px; margin-top: 30px; }
+
+/* ၄။ Select Box (Neon Green) */
+div[data-baseweb="select"] > div {
+    background-color: #111 !important;
+    border: 2px solid #39FF14 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
 }
 
-/* ၅။ VS Ball Design */
-.vs-ball {
-    width: 60px;
-    height: 60px;
+/* ၅။ Check Matches Now (အစိမ်းရောင် Glossy) */
+div.stButton > button:first-of-type {
+    background: linear-gradient(180deg, #00FF00 0%, #008000 100%) !important;
+    color: black !important;
+    height: 65px !important;
+    font-size: 26px !important;
+    font-weight: 900 !important;
+    border-radius: 35px !important;
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.5), inset 0 5px 15px rgba(255,255,255,0.6) !important;
+    border: none !important;
+    width: 100% !important;
+}
+
+/* ၆။ Purple Match Box (Home vs Away ထည့်တဲ့ဘောင်) */
+.match-box {
+    border: 3px solid #ff00ff !important;
+    border-radius: 30px !important;
+    padding: 20px;
+    background-color: #000;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 15px 0;
+}
+
+/* ၇။ VS Circle (ပုံထဲကအတိုင်း အဖြူရောင် Glow ပါမယ်) */
+.vs-circle {
+    width: 75px;
+    height: 75px;
     background: linear-gradient(90deg, #39FF14 50%, #FF4500 50%);
     border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+    border: 3px solid white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 900;
+    font-weight: bold;
     color: black;
-    margin: 10px auto;
+    box-shadow: 0 0 20px white;
+    margin: 0 15px;
 }
 
-/* ၆။ Buttons (Glossy Look) */
-div.stButton > button {
-    border-radius: 20px !important;
-    font-weight: bold !important;
+/* ၈။ Generate Predictions (လိမ္မော်ရောင် Glossy) */
+div.stButton > button:last-of-type {
+    background: linear-gradient(180deg, #FF8C00 0%, #FF4500 100%) !important;
+    color: white !important;
+    height: 75px !important;
+    font-size: 28px !important;
+    font-weight: 900 !important;
+    border-radius: 40px !important;
+    box-shadow: 0 8px 30px rgba(255, 69, 0, 0.5), inset 0 5px 15px rgba(255,255,255,0.6) !important;
+    border: none !important;
+    width: 100% !important;
 }
