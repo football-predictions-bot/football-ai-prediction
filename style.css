@@ -73,11 +73,12 @@ div[data-baseweb="select"] input {
     font-size: 16px;
     font-weight: 700;
     box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3), inset 0 5px 10px rgba(255, 255, 255, 0.5);
-    height: 40px; /* Height တူအောင် သတ်မှတ်ခြင်း */
+    height: 40px; 
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: none;
+    position: relative; /* နေရာငြိမ်ရန် */
 }
 
 /* ၃။ Select Boxes (Neon Green) */
@@ -98,7 +99,7 @@ div[data-baseweb="select"] > div {
     font-size: 28px;
     font-weight: 900;
     margin: 20px 5px;
-    height: 70px; /* Height တူအောင် သတ်မှတ်ခြင်း */
+    height: 70px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -107,12 +108,8 @@ div[data-baseweb="select"] > div {
     transition: transform 0.1s;
     user-select: none;
     pointer-events: none;
+    position: relative; /* နေရာငြိမ်ရန် */
 }
-.btn-green-glossy:active {
-    transform: scale(0.96);
-    filter: brightness(0.9);
-}
-
 /* ၅။ Match Box Container */
 .match-box-container {
     padding: 10px 0;
@@ -148,7 +145,7 @@ div[data-baseweb="select"] > div {
     font-size: 32px;
     font-weight: 900;
     margin: 20px 5px;
-    height: 85px; /* Height တူအောင် သတ်မှတ်ခြင်း */
+    height: 85px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -157,35 +154,47 @@ div[data-baseweb="select"] > div {
     transition: transform 0.1s;
     user-select: none;
     pointer-events: none;
+    position: relative; /* နေရာငြိမ်ရန် */
 }
 
-.btn-orange-glossy:active {
-    transform: scale(0.96);
-    filter: brightness(0.9);
+/* ၈။ Streamlit Button အား အကြည်ရောင်ပြောင်း၍ Glossy ပေါ်တွင် Absolute ပုံစံဖြင့် ကွက်တိထပ်ခြင်း */
+
+/* Button Container အား Position Relative လုပ်ရန် (Vertical Block အတွင်းရှိ Button များအတွက်) */
+.stButton {
+    position: relative;
+    z-index: 10;
 }
 
-/* ၈။ Streamlit Button ကို အကြည်ရောင်ပြောင်းပြီး Glossy ပေါ် ထပ်တင်ခြင်း */
 div.stButton > button {
     background-color: transparent !important;
     color: transparent !important;
     border: none !important;
     width: 100% !important;
-    position: relative;
-    z-index: 10;
+    position: absolute !important; /* ပုံသေ ဆွဲကပ်ထားရန် */
+    left: 0;
+    /* top ကို - ကိန်းများဖြင့် မညှိတော့ဘဲ Container အောက်ခြေကနေ ပြန်ကပ်မည် */
+    bottom: 0; 
+    z-index: 11;
 }
 
-/* Check Matches Now ခလုတ်အတွက် သီးသန့်နေရာညှိခြင်း */
-[data-testid="stVerticalBlock"] div:nth-child(8) div.stButton > button {
+/* Check Matches Now ခလုတ် (Green) နှင့် ထပ်ရန် */
+.btn-green-glossy + div.stButton > button,
+[data-testid="stVerticalBlock"] div:has(.btn-green-glossy) + div.stButton > button {
     height: 70px !important;
-    top: -90px !important;
-    margin-bottom: -70px !important;
+    margin-top: -90px; /* Glossy ပုံးပေါ်သို့ တက်ရန် */
 }
 
-/* Generate Predictions ခလုတ်အတွက် သီးသန့်နေရာညှိခြင်း */
-[data-testid="stVerticalBlock"] div:nth-child(12) div.stButton > button {
+/* Generate Predictions ခလုတ် (Orange) နှင့် ထပ်ရန် */
+.btn-orange-glossy + div.stButton > button,
+[data-testid="stVerticalBlock"] div:has(.btn-orange-glossy) + div.stButton > button {
     height: 85px !important;
-    top: -105px !important;
-    margin-bottom: -85px !important;
+    margin-top: -105px; /* Glossy ပုံးပေါ်သို့ တက်ရန် */
+}
+
+/* Translate Button နေရာညှိခြင်း */
+.lang-wrapper div.stButton > button {
+    height: 40px !important;
+    margin-top: -40px !important;
 }
 
 div.stButton > button:hover, div.stButton > button:active, div.stButton > button:focus {
@@ -193,12 +202,4 @@ div.stButton > button:hover, div.stButton > button:active, div.stButton > button
     color: transparent !important;
     border: none !important;
     box-shadow: none !important;
-}
-
-/* Translate Button နေရာညှိခြင်း */
-.lang-wrapper div.stButton > button {
-    top: -45px !important;
-    height: 40px !important;
-    margin-bottom: -40px !important;
-                                 }
-
+    }
