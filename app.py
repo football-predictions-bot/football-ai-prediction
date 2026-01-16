@@ -3,10 +3,6 @@ import datetime
 import requests
 import google.generativeai as genai
 
-for m in genai.list_models():
-    if 'generateContent' in m.supported_generation_methods:
-        st.write(f"သုံးလို့ရတဲ့ Model: {m.name}")
-        
 
 # UI အမှိုက်များ (Menu, Toolbar, Badge) ကို လုံးဝပျောက်သွားစေရန် configuration သတ်မှတ်ခြင်း
 st.set_page_config(
@@ -149,7 +145,7 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
                 # မူရင်း Gemini 3 Flash ကိုသာ ပြန်သုံးထားပါသည်
-                model = genai.GenerativeModel('gemini-3-flash-preview') 
+                model = genai.GenerativeModel('gemini-2.0-flash') 
                 prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {lang} language."
                 response = model.generate_content(prompt)
                 st.info(response.text)
