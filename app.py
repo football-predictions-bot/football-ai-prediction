@@ -66,13 +66,11 @@ st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</
 league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
-# Keyboard မပေါ်စေရန် Radio Button သုံးထားပါသည်
+# ရက်စွဲ Option များ
 date_option = st.radio("Date Option", d[lang]['date_opts'], horizontal=True, label_visibility="collapsed")
 
-sel_date = datetime.date.today()
-# Manual ရွေးမှသာ Date Picker ပြမည် (ပုံမှန်အားဖြင့် ဖျောက်ထားမည်)
-if date_option == d[lang]['date_opts'][0]:
-    sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
+# Date Picker ကို အမြဲတမ်း ပြန်ပေါ်နေအောင် ထားရှိခြင်း
+sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
 # ၃။ Check Matches Now (Green Glossy)
 st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
@@ -83,12 +81,12 @@ if st.button(" ", key="check_btn_hidden", use_container_width=True):
         try:
             token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
             
-            # 24/48 Hours Logic
+            # ၂၄/၄၈ နာရီ Logic အား ပြန်လည်ပြင်ဆင်ခြင်း
             today = datetime.date.today()
-            if "24" in date_option or "၂၄" in date_option:
+            if date_option == d[lang]['date_opts'][1]: # 24 Hours
                 d_from = today
                 d_to = today + datetime.timedelta(days=1)
-            elif "48" in date_option or "၄၈" in date_option:
+            elif date_option == d[lang]['date_opts'][2]: # 48 Hours
                 d_from = today
                 d_to = today + datetime.timedelta(days=2)
             else:
@@ -155,4 +153,3 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
     else:
         st.warning("Please select teams first!")
 st.markdown('</div>', unsafe_allow_html=True)
-
