@@ -50,7 +50,7 @@ d = {
 }
 lang = st.session_state.lang
 
-# Football-Data.org League Codes
+# Football-Data.org League Codes & Mapping for Display
 league_codes = {
     "All Leagues": "ALL",
     "Premier League (England)": "PL",
@@ -65,6 +65,22 @@ league_codes = {
     "Eredivisie (Netherlands)": "DED",
     "Primeira Liga (Portugal)": "PPL",
     "Serie A (Brazil)": "BSA"
+}
+
+# API က ပြန်ပေးတဲ့ နာမည်ကို ကိုယ်ပြချင်တဲ့ နာမည် (နိုင်ငံပါဝင်သော) သို့ ပြောင်းရန် mapping
+league_name_map = {
+    "Premier League": "Premier League (England)",
+    "UEFA Champions League": "Champions League (Europe)",
+    "Primera Division": "La Liga (Spain)",
+    "Bundesliga": "Bundesliga (Germany)",
+    "Serie A": "Serie A (Italy)",
+    "Ligue 1": "Ligue 1 (France)",
+    "FIFA World Cup": "FIFA World Cup (Global)",
+    "European Championship": "Euro Championship (Europe)",
+    "Championship": "Championship (England)",
+    "Eredivisie": "Eredivisie (Netherlands)",
+    "Primeira Liga": "Primeira Liga (Portugal)",
+    "Campeonato Brasileiro Série A": "Serie A (Brazil)"
 }
 
 with open("style.css") as f:
@@ -126,14 +142,17 @@ if check_click:
                 h_set, a_set = set(), set()
                 for idx, m in enumerate(matches, 1):
                     h, a = m['homeTeam']['name'], m['awayTeam']['name']
-                    l_name = m['competition']['name']
+                    raw_l_name = m['competition']['name']
+                    # Display name ကို mapping ထဲကယူမည်၊ မရှိရင် raw name သုံးမည်
+                    l_display = league_name_map.get(raw_l_name, raw_l_name)
+                    
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                     mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
                     t_str = mm_dt.strftime("%H:%M")
                     h_set.add(h)
                     a_set.add(a)
                     st.session_state.display_matches.append({
-                        'idx': idx, 'time': t_str, 'home': h, 'away': a, 'league': l_name
+                        'idx': idx, 'time': t_str, 'home': h, 'away': a, 'league': l_display
                     })
                 st.session_state.h_teams = sorted(list(h_set))
                 st.session_state.a_teams = sorted(list(a_set))
@@ -143,13 +162,17 @@ if check_click:
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-# ပွဲစဉ်များကို လိဂ်အမည်ဖြင့် အုပ်စုခွဲ၍ ပြသခြင်း
+# ပွဲစဉ်များကို Popularity အလိုက် Group လုပ်၍ပြသခြင်း
 if st.session_state.display_matches:
     grouped_matches = {}
     for match in st.session_state.display_matches:
         grouped_matches.setdefault(match['league'], []).append(match)
     
-    for l_title, matches_list in grouped_matches.items():
+    # Popularity sort: league_codes ထဲက အစဉ်အတိုင်း Group များကို စီမည်
+    sorted_group_titles = [k for k in league_codes.keys() if k in grouped_matches]
+    
+    for l_title in sorted_group_titles:
+        matches_list = grouped_matches[l_title]
         st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
         for m in matches_list:
             st.markdown(f"""
@@ -202,4 +225,4 @@ if gen_click:
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-        
+
