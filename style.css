@@ -34,10 +34,28 @@ div[data-baseweb="select"] > div {
     font-weight: 900;
     margin: 20px 5px;
     box-shadow: 0 0 25px rgba(0, 255, 0, 0.4), inset 0 10px 15px rgba(255, 255, 255, 0.8);
-    position: relative;
+    cursor: pointer;
+    /* နှိပ်လိုက်လျှင် တုံ့ပြန်မှုရှိစေရန် ထည့်သွင်းချက် */
+    transition: transform 0.1s;
+    user-select: none;
 }
 
-/* ၅။ VS Ball (White Glow) */
+/* Green Glossy ကို နှိပ်လိုက်သည့်အချိန် (Active state) */
+.btn-green-glossy:active {
+    transform: scale(0.96);
+    filter: brightness(0.9);
+}
+
+/* ၅။ Purple Match Box ကို ဖျက်လိုက်ပြီး သာမန် Layout အဖြစ် ပြောင်းလိုက်သည် */
+.match-box-container {
+    padding: 10px 0;
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+/* ၆။ VS Ball (White Glow) */
 .vs-ball {
     width: 75px;
     height: 75px;
@@ -53,7 +71,7 @@ div[data-baseweb="select"] > div {
     font-size: 22px;
 }
 
-/* ၆။ Generate Predictions (Glossy Orange) */
+/* ၇။ Generate Predictions (Glossy Orange) */
 .btn-orange-glossy {
     background: linear-gradient(180deg, #FF9500 0%, #FF4500 100%);
     border-radius: 50px;
@@ -64,37 +82,14 @@ div[data-baseweb="select"] > div {
     font-weight: 900;
     margin: 20px 5px;
     box-shadow: 0 10px 30px rgba(255, 69, 0, 0.5), inset 0 10px 20px rgba(255, 255, 255, 0.8);
-    position: relative;
+    cursor: pointer;
+    /* နှိပ်လိုက်လျှင် တုံ့ပြန်မှုရှိစေရန် ထည့်သွင်းချက် */
+    transition: transform 0.1s;
+    user-select: none;
 }
 
-/* ၇။ Streamlit Buttons တွေကို အကြည်ရောင်ပြောင်းပြီး Overlay တင်ခြင်း */
-div.stButton > button {
-    background-color: transparent !important;
-    border: none !important;
-    color: transparent !important;
-    width: 100% !important;
-    display: block !important;
-    position: relative !important;
-    z-index: 10 !important;
-}
-
-/* Check Match Button နေရာညှိခြင်း */
-div[data-testid="stButton"]:nth-of-type(2) button {
-    height: 65px !important;
-    margin-top: -85px !important;
-}
-
-/* Generate Prediction Button နေရာညှိခြင်း */
-div[data-testid="stButton"]:nth-of-type(3) button {
-    height: 85px !important;
-    margin-top: -105px !important;
-}
-
-/* Button နှိပ်လိုက်ရင် အရောင်မထွက်အောင် လုပ်ခြင်း */
-button:active, button:focus, button:hover {
-    background: transparent !important;
-    color: transparent !important;
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
+/* Orange Glossy ကို နှိပ်လိုက်သည့်အချိန် (Active state) */
+.btn-orange-glossy:active {
+    transform: scale(0.96);
+    filter: brightness(0.9);
 }
