@@ -50,7 +50,7 @@ d = {
 }
 lang = st.session_state.lang
 
-# Football-Data.org League Codes (Sorted by Popularity + Country)
+# Football-Data.org League Codes
 league_codes = {
     "All Leagues": "ALL",
     "Premier League (England)": "PL",
@@ -79,7 +79,7 @@ with col_lang:
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
-# ၂။ Select League & Date (Default: Premier League index 1)
+# ၂။ Select League & Date
 st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</p>', unsafe_allow_html=True)
 league_keys = list(league_codes.keys())
 league = st.selectbox("L", league_keys, index=1, label_visibility="collapsed")
@@ -102,17 +102,15 @@ if check_click:
     with st.spinner('Checking Matches...'):
         try:
             token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
-            if date_option == d[lang]['date_opts'][1]: # 24 Hours
+            if date_option == d[lang]['date_opts'][1]:
                 d_from, d_to = today_mm, today_mm + datetime.timedelta(days=1)
-            elif date_option == d[lang]['date_opts'][2]: # 48 Hours
+            elif date_option == d[lang]['date_opts'][2]:
                 d_from, d_to = today_mm, today_mm + datetime.timedelta(days=2)
             else:
                 d_from = d_to = sel_date
 
-            # All Leagues သို့မဟုတ် သီးသန့်လိဂ် ခွဲခြားခေါ်ယူခြင်း
             l_code = league_codes[league]
             if l_code == "ALL":
-                # All Leagues အတွက် လူသုံးများသော လိဂ်အားလုံး၏ codes ကို join ပေးရမည် (API ကန့်သတ်ချက်အရ)
                 target_codes = ",".join([v for k, v in league_codes.items() if v != "ALL"])
                 url = f"https://api.football-data.org/v4/matches?competitions={target_codes}&dateFrom={d_from}&dateTo={d_to}"
             else:
@@ -128,12 +126,15 @@ if check_click:
                 h_set, a_set = set(), set()
                 for idx, m in enumerate(matches, 1):
                     h, a = m['homeTeam']['name'], m['awayTeam']['name']
+                    l_name = m['competition']['name']
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                     mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
                     t_str = mm_dt.strftime("%H:%M")
                     h_set.add(h)
                     a_set.add(a)
-                    st.session_state.display_matches.append({'idx': idx, 'time': t_str, 'home': h, 'away': a})
+                    st.session_state.display_matches.append({
+                        'idx': idx, 'time': t_str, 'home': h, 'away': a, 'league': l_name
+                    })
                 st.session_state.h_teams = sorted(list(h_set))
                 st.session_state.a_teams = sorted(list(a_set))
             else:
@@ -142,17 +143,24 @@ if check_click:
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
+# ပွဲစဉ်များကို လိဂ်အမည်ဖြင့် အုပ်စုခွဲ၍ ပြသခြင်း
 if st.session_state.display_matches:
+    grouped_matches = {}
     for match in st.session_state.display_matches:
-        st.markdown(f"""
-            <div class="match-row">
-                <div class="col-no">#{match['idx']}</div>
-                <div class="col-time">🕒 {match['time']}</div>
-                <div class="col-team">{match['home']}</div>
-                <div class="col-vs">VS</div>
-                <div class="col-team">{match['away']}</div>
-            </div>
-        """, unsafe_allow_html=True)
+        grouped_matches.setdefault(match['league'], []).append(match)
+    
+    for l_title, matches_list in grouped_matches.items():
+        st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
+        for m in matches_list:
+            st.markdown(f"""
+                <div class="match-row">
+                    <div class="col-no">#{m['idx']}</div>
+                    <div class="col-time">🕒 {m['time']}</div>
+                    <div class="col-team">{m['home']}</div>
+                    <div class="col-vs">VS</div>
+                    <div class="col-team">{m['away']}</div>
+                </div>
+            """, unsafe_allow_html=True)
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
@@ -187,7 +195,7 @@ if gen_click:
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
                 model = genai.GenerativeModel('gemini-flash-latest') 
-                prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
+                prompt = f"Analyze {h_team} vs {a_team} in the league. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
                 response = model.generate_content(prompt)
                 st.info(response.text)
             except Exception as e:
