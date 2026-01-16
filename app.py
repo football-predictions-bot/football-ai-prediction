@@ -20,8 +20,10 @@ today_mm = now_mm.date()
 # ၁။ Dictionary & Session State
 if 'lang' not in st.session_state:
     st.session_state.lang = 'EN'
-if 'team_list' not in st.session_state:
-    st.session_state.team_list = ["Select Team"]
+if 'h_teams' not in st.session_state:
+    st.session_state.h_teams = ["Select Team"]
+if 'a_teams' not in st.session_state:
+    st.session_state.a_teams = ["Select Team"]
 if 'display_matches' not in st.session_state:
     st.session_state.display_matches = []
 
@@ -107,26 +109,27 @@ if check_click:
             data = response.json()
             matches = data.get('matches', [])
             
-            # ဒေတာအသစ်များကို Session State ထဲတွင် သိမ်းဆည်းခြင်း
             st.session_state.display_matches = [] 
             if matches:
-                teams = set()
+                h_set = set()
+                a_set = set()
                 for idx, m in enumerate(matches, 1):
                     h = m['homeTeam']['name']
                     a = m['awayTeam']['name']
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                     mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
                     t_str = mm_dt.strftime("%H:%M")
-                    teams.add(h)
-                    teams.add(a)
+                    h_set.add(h)
+                    a_set.add(a)
                     st.session_state.display_matches.append({'idx': idx, 'time': t_str, 'home': h, 'away': a})
-                st.session_state.team_list = sorted(list(teams))
+                st.session_state.h_teams = sorted(list(h_set))
+                st.session_state.a_teams = sorted(list(a_set))
             else:
-                st.session_state.team_list = ["No matches found"]
+                st.session_state.h_teams = ["No matches found"]
+                st.session_state.a_teams = ["No matches found"]
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-# Match Table ကို အမြဲတမ်းပြသနေစေရန် loop ပတ်ခြင်း
 if st.session_state.display_matches:
     for match in st.session_state.display_matches:
         st.markdown(f"""
@@ -141,21 +144,19 @@ if st.session_state.display_matches:
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
-
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
-current_teams = st.session_state.team_list
 
 with c1:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["home"]}</p>', unsafe_allow_html=True)
-    h_team = st.selectbox("H", current_teams, key="h", label_visibility="collapsed")
+    h_team = st.selectbox("H", st.session_state.h_teams, key="h", label_visibility="collapsed")
 
 with cvs:
     st.markdown('<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="vs-ball">vs</div></div>', unsafe_allow_html=True)
 
 with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
-    a_team = st.selectbox("A", [t for t in current_teams if t != h_team], key="a", label_visibility="collapsed")
+    a_team = st.selectbox("A", st.session_state.a_teams, key="a", label_visibility="collapsed")
 
 # ၆။ Orange Glossy Button
 st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
@@ -163,7 +164,7 @@ gen_click = st.button(d[lang]["btn_gen"], key="gen_btn", use_container_width=Tru
 st.markdown('</div>', unsafe_allow_html=True)
 
 if gen_click:
-    if h_team and a_team and h_team != "Select Team" and h_team != "No matches found":
+    if h_team and a_team and h_team not in ["Select Team", "No matches found"]:
         progress_bar = st.progress(0)
         for percent_complete in range(100):
             time.sleep(0.01)
@@ -180,4 +181,4 @@ if gen_click:
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-
+        
