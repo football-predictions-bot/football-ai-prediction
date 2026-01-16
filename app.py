@@ -27,14 +27,16 @@ d = {
         'btn_check': 'Check Matches Now', 'title2': 'Select Team',
         'home': 'HOME TEAM', 'away': 'AWAY TEAM', 'btn_gen': 'Generate Predictions',
         'trans_btn': 'မြန်မာဘာသာသို့ ပြောင်းရန်',
-        'date_opts': ["Manual Date", "Within 24 Hours", "Within 48 Hours"]
+        'date_opts': ["Manual Date", "Within 24 Hours", "Within 48 Hours"],
+        'ai_lang': 'English'
     },
     'MM': {
         'title1': 'ပွဲကြိုခန့်မှန်းချက်များ', 'sel_league': 'လိဂ်ကို ရွေးချယ်ပါ', 'sel_date': 'ရက်စွဲကို ရွေးချယ်ပါ',
         'btn_check': 'ပွဲစဉ်များကို စစ်ဆေးမည်', 'title2': 'အသင်းကို ရွေးချယ်ပါ',
         'home': 'အိမ်ရှင်အသင်း', 'away': 'ဧည့်သည်အသင်း', 'btn_gen': 'ခန့်မှန်းချက် ထုတ်ယူမည်',
         'trans_btn': 'Switch to English',
-        'date_opts': ["ရက်စွဲတပ်၍ရှာမည်", "၂၄ နာရီအတွင်း", "၄၈ နာရီအတွင်း"]
+        'date_opts': ["ရက်စွဲတပ်၍ရှာမည်", "၂၄ နာရီအတွင်း", "၄၈ နာရီအတွင်း"],
+        'ai_lang': 'Burmese'
     }
 }
 lang = st.session_state.lang
@@ -146,7 +148,8 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
                 # မူရင်း Gemini 3 Flash ကိုသာ ပြန်သုံးထားပါသည်
                 model = genai.GenerativeModel('gemini-flash-latest') 
-                prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {lang} language."
+                # Prompt တွင် Burmese ဟု သေချာပေါက်ပါသွားစေရန် d[lang]['ai_lang'] ကို သုံးထားသည်
+                prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
                 response = model.generate_content(prompt)
                 st.info(response.text)
             except Exception as e:
