@@ -5,12 +5,13 @@
 header, [data-testid="stHeader"], [data-testid="stDecoration"] { display: none !important; height: 0 !important; }
 footer, .stFooter, [data-testid="stFooter"], #MainMenu { display: none !important; }
 
-/* Background & Padding Fix */
-.stApp { background-color: #000000; }
+/* Background & Padding Fix (Deep Navy ပြောင်းထားသည်) */
+.stApp { background-color: #000814 !important; }
 .st-emotion-cache-18ni7ap {padding: 0 !important;}
 
-/* Selectbox Fix */
-div[data-baseweb="select"] input { caret-color: transparent !important; }
+/* Selectbox Fix & Cursor Visible */
+div[data-baseweb="select"] input { caret-color: white !important; }
+input { caret-color: white !important; }
 
 /* ၂။ Gradient Text (Predictions & Select Team) */
 .title-style {
@@ -55,7 +56,6 @@ div[data-baseweb="select"] > div {
     box-shadow: 0 0 25px rgba(0, 255, 0, 0.4), inset 0 10px 15px rgba(255, 255, 255, 0.8) !important;
     margin-top: 20px !important;
 }
-
 /* ၅။ Match Box Container */
 .match-box-container {
     padding: 10px 0;
@@ -118,5 +118,5 @@ div.stButton > button:hover, div.stButton > button:focus {
 .lang-wrapper, .check-btn-wrapper, .gen-btn-wrapper {
     width: 100%;
     margin: 0 !important;
-}
-
+    }
+                                
