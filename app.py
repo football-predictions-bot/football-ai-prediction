@@ -57,10 +57,12 @@ with open("style.css") as f:
 # Language Toggle (Glossy Blue Style ဖြင့် ပြင်ဆင်ထားသည်)
 col_space, col_lang = st.columns([7, 3])
 with col_lang:
-    # Container ထဲထည့်မှ CSS absolute အလုပ်လုပ်မည်
+    # Wrapper သုံး၍ နေရာတိကျအောင်လုပ်ခြင်း
+    st.markdown('<div class="lang-wrapper">', unsafe_allow_html=True)
     with st.container():
         st.markdown(f'<div class="btn-blue-glossy">{d[lang]["trans_btn"]}</div>', unsafe_allow_html=True)
         st.button(" ", key="lang_btn_hidden", on_click=toggle_lang, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
@@ -76,6 +78,7 @@ date_option = st.radio("Date Option", d[lang]['date_opts'], horizontal=True, lab
 sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
 # ၃။ Check Matches Now (Green Glossy)
+st.markdown('<div class="check-btn-wrapper">', unsafe_allow_html=True)
 with st.container():
     st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
     if st.button(" ", key="check_btn_hidden", use_container_width=True):
@@ -115,10 +118,10 @@ with st.container():
                     st.warning("No matches found.")
             except Exception as e:
                 st.error(f"Error: {str(e)}")
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
-
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
 current_teams = st.session_state.team_list
@@ -135,6 +138,7 @@ with c2:
     a_team = st.selectbox("A", [t for t in current_teams if t != h_team], key="a", label_visibility="collapsed")
 
 # ၆။ Orange Glossy Button (Generate Predictions)
+st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
 with st.container():
     st.markdown(f'<div class="btn-orange-glossy">{d[lang]["btn_gen"]}</div>', unsafe_allow_html=True)
     if st.button(" ", key="gen_btn_hidden", use_container_width=True):
@@ -150,4 +154,4 @@ with st.container():
                     st.error(f"AI Error: {str(e)}")
         else:
             st.warning("Please select teams first!")
-
+st.markdown('</div>', unsafe_allow_html=True)
