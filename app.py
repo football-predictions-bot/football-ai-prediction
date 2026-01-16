@@ -12,6 +12,10 @@ st.set_page_config(
     menu_items=None
 )
 
+# မြန်မာစံတော်ချိန် (UTC + 6:30) ကိုတွက်ချက်ခြင်း
+now_mm = datetime.datetime.utcnow() + datetime.timedelta(hours=6, minutes=30)
+today_mm = now_mm.date()
+
 # ၁။ Dictionary & Session State
 if 'lang' not in st.session_state:
     st.session_state.lang = 'EN'
@@ -54,7 +58,7 @@ league_codes = {
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Language Toggle (Original Button ကိုပဲ CSS ဖြင့် Glossy ပြောင်းထားသည်)
+# Language Toggle
 col_space, col_lang = st.columns([7, 3])
 with col_lang:
     st.markdown('<div class="lang-wrapper">', unsafe_allow_html=True)
@@ -63,13 +67,13 @@ with col_lang:
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
-# ၂။ Select League & Date
+# ၂။ Select League & Date (Today MM ကို သုံးထားသည်)
 st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</p>', unsafe_allow_html=True)
 league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
 date_option = st.radio("Date Option", d[lang]['date_opts'], horizontal=True, label_visibility="collapsed")
-sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
+sel_date = st.date_input("D", value=today_mm, min_value=today_mm, label_visibility="collapsed")
 
 # ၃။ Check Matches Now
 st.markdown('<div class="check-btn-wrapper">', unsafe_allow_html=True)
@@ -80,13 +84,12 @@ if check_click:
     with st.spinner('Checking Matches...'):
         try:
             token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
-            today = datetime.date.today()
             if date_option == d[lang]['date_opts'][1]: # 24 Hours
-                d_from = today
-                d_to = today + datetime.timedelta(days=1)
+                d_from = today_mm
+                d_to = today_mm + datetime.timedelta(days=1)
             elif date_option == d[lang]['date_opts'][2]: # 48 Hours
-                d_from = today
-                d_to = today + datetime.timedelta(days=2)
+                d_from = today_mm
+                d_to = today_mm + datetime.timedelta(days=2)
             else:
                 d_from = d_to = sel_date
 
@@ -131,7 +134,7 @@ with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
     a_team = st.selectbox("A", [t for t in current_teams if t != h_team], key="a", label_visibility="collapsed")
 
-# ၆။ Orange Glossy Button (Original Button ကိုပဲ CSS ဖြင့် Glossy ပြောင်းထားသည်)
+# ၆။ Orange Glossy Button
 st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
 gen_click = st.button(d[lang]["btn_gen"], key="gen_btn", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
@@ -149,5 +152,4 @@ if gen_click:
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-
-
+                                      
