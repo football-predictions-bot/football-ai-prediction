@@ -26,6 +26,9 @@ if 'a_teams' not in st.session_state:
     st.session_state.a_teams = ["Select Team"]
 if 'display_matches' not in st.session_state:
     st.session_state.display_matches = []
+# Auto-select အတွက် session state များ
+if 'h_sel' not in st.session_state: st.session_state.h_sel = "Select Team"
+if 'a_sel' not in st.session_state: st.session_state.a_sel = "Select Team"
 
 def toggle_lang():
     st.session_state.lang = 'MM' if st.session_state.lang == 'EN' else 'EN'
@@ -50,7 +53,7 @@ d = {
 }
 lang = st.session_state.lang
 
-# Football-Data.org League Codes & Mapping for Display
+# Football-Data.org League Codes
 league_codes = {
     "All Leagues": "ALL",
     "Premier League (England)": "PL",
@@ -67,7 +70,6 @@ league_codes = {
     "Serie A (Brazil)": "BSA"
 }
 
-# API Mapping
 league_name_map = {
     "Premier League": "Premier League (England)",
     "UEFA Champions League": "Champions League (Europe)",
@@ -86,7 +88,6 @@ league_name_map = {
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Language Toggle
 col_space, col_lang = st.columns([7, 3])
 with col_lang:
     st.markdown('<div class="lang-wrapper">', unsafe_allow_html=True)
@@ -95,7 +96,6 @@ with col_lang:
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
-# ၂။ Select League & Date
 st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</p>', unsafe_allow_html=True)
 league_keys = list(league_codes.keys())
 league = st.selectbox("L", league_keys, index=1, label_visibility="collapsed")
@@ -104,7 +104,6 @@ st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]
 date_option = st.radio("Date Option", d[lang]['date_opts'], horizontal=True, label_visibility="collapsed")
 sel_date = st.date_input("D", value=today_mm, min_value=today_mm, label_visibility="collapsed")
 
-# ၃။ Check Matches Now
 st.markdown('<div class="check-btn-wrapper">', unsafe_allow_html=True)
 check_click = st.button(d[lang]["btn_check"], key="check_btn", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
@@ -148,9 +147,7 @@ if check_click:
                     t_str = mm_dt.strftime("%H:%M")
                     h_set.add(h)
                     a_set.add(a)
-                    st.session_state.display_matches.append({
-                        'idx': idx, 'time': t_str, 'home': h, 'away': a, 'league': l_display
-                    })
+                    st.session_state.display_matches.append({'idx': idx, 'time': t_str, 'home': h, 'away': a, 'league': l_display})
                 st.session_state.h_teams = sorted(list(h_set))
                 st.session_state.a_teams = sorted(list(a_set))
             else:
@@ -166,35 +163,34 @@ if st.session_state.display_matches:
     for l_title in sorted_group_titles:
         st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
         for m in grouped_matches[l_title]:
-            st.markdown(f'<div class="match-row"><div class="col-no">#{m["idx"]}</div><div class="col-time">🕒 {m["time"]}</div><div class="col-team">{m["home"]}</div><div class="col-vs">VS</div><div class="col-team">{m["away"]}</div></div>', unsafe_allow_html=True)
+            st.markdown(f"""<div class="match-row"><div class="col-no">#{m['idx']}</div><div class="col-time">🕒 {m['time']}</div><div class="col-team">{m['home']}</div><div class="col-vs">VS</div><div class="col-team">{m['away']}</div></div>""", unsafe_allow_html=True)
 
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
-
-# ၅။ Home vs Away Section (Auto-Select Logic)
+# ၅။ Home vs Away Section (Auto-Coupled Selection)
 c1, cvs, c2 = st.columns([2, 1, 2])
 
-# Session state မှာ ရွေးချယ်မှု သိမ်းထားရန်
-if 'h_sel' not in st.session_state: st.session_state.h_sel = st.session_state.h_teams[0]
-if 'a_sel' not in st.session_state: st.session_state.a_sel = st.session_state.a_teams[0]
+def on_home_change():
+    match = next((m for m in st.session_state.display_matches if m['home'] == st.session_state.h_key), None)
+    if match: st.session_state.a_sel = match['away']
 
-def update_home():
-    target = next((m for m in st.session_state.display_matches if m['away'] == st.session_state.a_key), None)
-    if target: st.session_state.h_sel = target['home']
-
-def update_away():
-    target = next((m for m in st.session_state.display_matches if m['home'] == st.session_state.h_key), None)
-    if target: st.session_state.a_sel = target['away']
+def on_away_change():
+    match = next((m for m in st.session_state.display_matches if m['away'] == st.session_state.a_key), None)
+    if match: st.session_state.h_sel = match['home']
 
 with c1:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["home"]}</p>', unsafe_allow_html=True)
-    h_team = st.selectbox("H", st.session_state.h_teams, key="h_key", index=st.session_state.h_teams.index(st.session_state.h_sel) if st.session_state.h_sel in st.session_state.h_teams else 0, on_change=update_away, label_visibility="collapsed")
+    h_idx = st.session_state.h_teams.index(st.session_state.h_sel) if st.session_state.h_sel in st.session_state.h_teams else 0
+    h_team = st.selectbox("H", st.session_state.h_teams, index=h_idx, key="h_key", on_change=update_away if 'update_away' in locals() else on_home_change, label_visibility="collapsed")
+    st.session_state.h_sel = h_team
 
 with cvs:
     st.markdown('<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="vs-ball">vs</div></div>', unsafe_allow_html=True)
 
 with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
-    a_team = st.selectbox("A", st.session_state.a_teams, key="a_key", index=st.session_state.a_teams.index(st.session_state.a_sel) if st.session_state.a_sel in st.session_state.a_teams else 0, on_change=update_home, label_visibility="collapsed")
+    a_idx = st.session_state.a_teams.index(st.session_state.a_sel) if st.session_state.a_sel in st.session_state.a_teams else 0
+    a_team = st.selectbox("A", st.session_state.a_teams, index=a_idx, key="a_key", on_change=on_away_change, label_visibility="collapsed")
+    st.session_state.a_sel = a_team
 
 # ၆။ Orange Glossy Button
 st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
@@ -211,11 +207,11 @@ if gen_click:
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
                 model = genai.GenerativeModel('gemini-flash-latest') 
-                prompt = f"Analyze {h_team} vs {a_team} in football. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
+                prompt = f"Analyze football match {h_team} vs {a_team}. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
                 response = model.generate_content(prompt)
                 st.info(response.text)
             except Exception as e:
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-        
+    
