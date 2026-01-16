@@ -41,11 +41,13 @@ league_codes = {
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Language Toggle (Translate Button)
+# Language Toggle (Glossy Blue Style ဖြင့် ပြင်ဆင်ထားသည်)
 col_space, col_lang = st.columns([7, 3])
 with col_lang:
-    # အစ်ကို့ရဲ့ toggle_lang ကို အသုံးပြုထားသော Translate Button
-    st.button(d[lang]['trans_btn'], on_click=toggle_lang, use_container_width=True)
+    st.markdown(f'<div class="btn-blue-glossy">{d[lang]["trans_btn"]}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="lang-wrapper" style="margin-top:-45px;">', unsafe_allow_html=True)
+    st.button(" ", key="lang_btn_hidden", on_click=toggle_lang, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
@@ -70,7 +72,6 @@ if st.button(" ", key="check_btn_hidden", use_container_width=True):
             matches = data.get('matches', [])
             if matches:
                 teams = set()
-                # ဇယားထုတ်ရန်အတွက် match_list ပြင်ဆင်ခြင်း
                 match_display_data = []
                 for m in matches:
                     h = m['homeTeam']['name']
@@ -81,7 +82,6 @@ if st.button(" ", key="check_btn_hidden", use_container_width=True):
                 
                 st.session_state.team_list = sorted(list(teams))
                 st.success(f"Found {len(matches)} matches!")
-                # ပွဲစဉ်များကို ဇယားဖြင့် ဖော်ပြခြင်း
                 st.table(match_display_data)
             else:
                 st.session_state.team_list = ["No matches found"]
@@ -113,7 +113,7 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
         with st.spinner('AI is thinking...'):
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
-                model = genai.GenerativeModel('gemini-3-flash-preview')
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {lang} language."
                 response = model.generate_content(prompt)
                 st.info(response.text)
@@ -121,4 +121,4 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-    
+        
