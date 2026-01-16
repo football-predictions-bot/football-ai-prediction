@@ -1,13 +1,17 @@
-/* ၁။ Streamlit UI အပိုတွေအကုန် ဖျောက်မယ် (Badge နှင့် Toolbar အားလုံးကို အပြတ်ဖျောက်ခြင်း) */
+/* ၁။ Streamlit UI အပိုတွေအကုန် (Badge, Icons, Footer, Created with အကုန်ပါဝင်သည်) */
 header, footer, .stDeployButton, [data-testid="stHeader"], [data-testid="stHeaderActionElements"], 
-#viewerBadge, .stAppDeployButton, [data-testid="stAppDeployButton"], .stAppToolbar, [data-testid="stStatusWidget"] {
+#viewerBadge, .stAppDeployButton, [data-testid="stAppDeployButton"], .stAppToolbar, 
+[data-testid="stStatusWidget"], .viewerBadge_container__1QS9N, div[class^="viewerBadge_container"],
+.stFooter, [data-testid="stFooter"] {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
     height: 0 !important;
     width: 0 !important;
+    position: fixed !important;
     pointer-events: none !important;
 }
+
 .stApp { background-color: #000000; }
 .st-emotion-cache-18ni7ap {padding: 0 !important;}
 
@@ -111,32 +115,6 @@ div[data-baseweb="select"] > div {
 .btn-orange-glossy:active {
     transform: scale(0.96);
     filter: brightness(0.9);
-}
-
-/* ၈။ Streamlit Button ကို အကြည်ရောင်ပြောင်းပြီး Glossy ပေါ် ထပ်တင်ခြင်း */
-div.stButton > button {
-    background-color: transparent !important;
-    color: transparent !important;
-    border: none !important;
-    width: 100% !important;
-    height: 60px !important;
-    position: relative;
-    top: -85px; 
-    margin-bottom: -60px;
-    z-index: 10;
-}
-
-div.stButton > button:hover, div.stButton > button:active, div.stButton > button:focus {
-    background-color: transparent !important;
-    color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-/* Translate Button နေရာညှိခြင်း */
-.lang-wrapper div.stButton > button {
-    top: -45px !important;
-    height: 40px !important;
 }
 
 /* ၈။ Streamlit Button ကို အကြည်ရောင်ပြောင်းပြီး Glossy ပေါ် ထပ်တင်ခြင်း */
