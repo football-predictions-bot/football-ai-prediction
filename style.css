@@ -1,17 +1,47 @@
-/* ၁။ Streamlit UI အပိုတွေအကုန် (Badge, Icons, Footer, Created with အကုန်ပါဝင်သည်) */
-header, footer, .stDeployButton, [data-testid="stHeader"], [data-testid="stHeaderActionElements"], 
-#viewerBadge, .stAppDeployButton, [data-testid="stAppDeployButton"], .stAppToolbar, 
-[data-testid="stStatusWidget"], .viewerBadge_container__1QS9N, div[class^="viewerBadge_container"],
-.stFooter, [data-testid="stFooter"] {
+/* ၁။ UI အမှိုက်များကို နျူကလီးယားနည်းလမ်းဖြင့် အမြစ်ပြတ် ဖျောက်မည် */
+
+/* Viewer Badge (Crown Icon/Profile) */
+#viewerBadge, 
+.viewerBadge_container__1QS9N,
+div[class^="viewerBadge_container"],
+[data-testid="stStatusWidget"] {
     display: none !important;
     visibility: hidden !important;
-    opacity: 0 !important;
-    height: 0 !important;
-    width: 0 !important;
-    position: fixed !important;
     pointer-events: none !important;
+    opacity: 0 !important;
 }
 
+/* Deploy Button & Toolbar */
+.stAppDeployButton,
+[data-testid="stAppDeployButton"],
+[data-testid="stHeaderActionElements"],
+.stAppToolbar,
+[data-testid="stToolbar"] {
+    display: none !important;
+}
+
+/* Header & Decoration */
+header, 
+[data-testid="stHeader"], 
+[data-testid="stDecoration"] {
+    display: none !important;
+    height: 0 !important;
+}
+
+/* Footer (Hosted with Streamlit) */
+footer, 
+.stFooter, 
+[data-testid="stFooter"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Menu Button (Hamburger) */
+#MainMenu {
+    display: none !important;
+}
+
+/* Background & Padding Fix */
 .stApp { background-color: #000000; }
 .st-emotion-cache-18ni7ap {padding: 0 !important;}
 
