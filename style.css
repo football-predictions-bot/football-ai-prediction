@@ -45,9 +45,8 @@ footer,
 .stApp { background-color: #000000; }
 .st-emotion-cache-18ni7ap {padding: 0 !important;}
 
-/* Selectbox နှင့် Date Input များတွင် Keyboard တက်မလာအောင် ပိတ်ခြင်း */
-div[data-baseweb="select"] input, 
-div[data-testid="stDateInput"] input {
+/* Selectbox တွင် Keyboard ပိတ်ထားဆဲဖြစ်သော်လည်း Date Input တွင် Keyboard ပြန်ဖွင့်ပေးထားသည် */
+div[data-baseweb="select"] input {
     caret-color: transparent !important;
     pointer-events: none !important;
 }
@@ -101,11 +100,39 @@ div[data-baseweb="select"] > div {
     user-select: none;
     pointer-events: none;
 }
+    height: 75px;
+    background: linear-gradient(90deg, #39FF14 50%, #FF4500 50%);
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 25px white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    color: black;
+    font-size: 22px;
+}
 
-.btn-green-glossy:active {
+/* ၇။ Generate Predictions (Glossy Orange) */
+.btn-orange-glossy {
+    background: linear-gradient(180deg, #FF9500 0%, #FF4500 100%);
+    border-radius: 50px;
+    color: white;
+    text-align: center;
+    padding: 22px;
+    font-size: 32px;
+    font-weight: 900;
+    margin: 20px 5px;
+    box-shadow: 0 10px 30px rgba(255, 69, 0, 0.5), inset 0 10px 20px rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: transform 0.1s;
+    user-select: none;
+    pointer-events: none;
+}
+
+.btn-orange-glossy:active {
     transform: scale(0.96);
     filter: brightness(0.9);
-}
 }
 
 /* ၈။ Streamlit Button ကို အကြည်ရောင်ပြောင်းပြီး Glossy ပေါ် ထပ်တင်ခြင်း */
@@ -133,6 +160,11 @@ div.stButton > button:hover, div.stButton > button:active, div.stButton > button
     top: -45px !important;
     height: 40px !important;
 }
+.btn-green-glossy:active {
+    transform: scale(0.96);
+    filter: brightness(0.9);
+}
+
 /* ၅။ Match Box Container */
 .match-box-container {
     padding: 10px 0;
@@ -204,4 +236,4 @@ div.stButton > button:hover, div.stButton > button:active, div.stButton > button
 .lang-wrapper div.stButton > button {
     top: -45px !important;
     height: 40px !important;
-}
+    }
