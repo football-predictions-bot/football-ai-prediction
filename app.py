@@ -25,13 +25,15 @@ d = {
         'title1': 'Predictions', 'sel_league': 'Select League', 'sel_date': 'Select Date',
         'btn_check': 'Check Matches Now', 'title2': 'Select Team',
         'home': 'HOME TEAM', 'away': 'AWAY TEAM', 'btn_gen': 'Generate Predictions',
-        'trans_btn': 'မြန်မာဘာသာသို့ ပြောင်းရန်'
+        'trans_btn': 'မြန်မာဘာသာသို့ ပြောင်းရန်',
+        'date_opts': ["Manual Date", "Within 24 Hours", "Within 48 Hours"]
     },
     'MM': {
         'title1': 'ပွဲကြိုခန့်မှန်းချက်များ', 'sel_league': 'လိဂ်ကို ရွေးချယ်ပါ', 'sel_date': 'ရက်စွဲကို ရွေးချယ်ပါ',
         'btn_check': 'ပွဲစဉ်များကို စစ်ဆေးမည်', 'title2': 'အသင်းကို ရွေးချယ်ပါ',
         'home': 'အိမ်ရှင်အသင်း', 'away': 'ဧည့်သည်အသင်း', 'btn_gen': 'ခန့်မှန်းချက် ထုတ်ယူမည်',
-        'trans_btn': 'Switch to English'
+        'trans_btn': 'Switch to English',
+        'date_opts': ["ရက်စွဲတပ်၍ရှာမည်", "၂၄ နာရီအတွင်း", "၄၈ နာရီအတွင်း"]
     }
 }
 lang = st.session_state.lang
@@ -64,7 +66,13 @@ st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</
 league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
-sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
+# Keyboard မပေါ်စေရန် Radio Button သုံးထားပါသည်
+date_option = st.radio("Date Option", d[lang]['date_opts'], horizontal=True, label_visibility="collapsed")
+
+sel_date = datetime.date.today()
+# Manual ရွေးမှသာ Date Picker ပြမည် (ပုံမှန်အားဖြင့် ဖျောက်ထားမည်)
+if date_option == d[lang]['date_opts'][0]:
+    sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
 # ၃။ Check Matches Now (Green Glossy)
 st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
@@ -74,8 +82,19 @@ if st.button(" ", key="check_btn_hidden", use_container_width=True):
     with st.spinner('Checking Matches...'):
         try:
             token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
-            date_str = sel_date.strftime('%Y-%m-%d')
-            url = f"https://api.football-data.org/v4/competitions/{league_codes[league]}/matches?dateFrom={date_str}&dateTo={date_str}"
+            
+            # 24/48 Hours Logic
+            today = datetime.date.today()
+            if "24" in date_option or "၂၄" in date_option:
+                d_from = today
+                d_to = today + datetime.timedelta(days=1)
+            elif "48" in date_option or "၄၈" in date_option:
+                d_from = today
+                d_to = today + datetime.timedelta(days=2)
+            else:
+                d_from = d_to = sel_date
+
+            url = f"https://api.football-data.org/v4/competitions/{league_codes[league]}/matches?dateFrom={d_from}&dateTo={d_to}"
             headers = {'X-Auth-Token': token}
             response = requests.get(url, headers=headers)
             data = response.json()
@@ -126,6 +145,7 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
         with st.spinner('AI is thinking...'):
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
+                # မူရင်း Gemini 3 Flash ကိုသာ ပြန်သုံးထားပါသည်
                 model = genai.GenerativeModel('gemini-3-flash-preview') 
                 prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {lang} language."
                 response = model.generate_content(prompt)
@@ -135,3 +155,4 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
     else:
         st.warning("Please select teams first!")
 st.markdown('</div>', unsafe_allow_html=True)
+
