@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 import requests
 import google.generativeai as genai
+import time
 
 
 # UI အမှိုက်များ (Menu, Toolbar, Badge) ကို လုံးဝပျောက်သွားစေရန် configuration သတ်မှတ်ခြင်း
@@ -67,7 +68,7 @@ with col_lang:
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
-# ၂။ Select League & Date (Today MM ကို သုံးထားသည်)
+# ၂။ Select League & Date
 st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</p>', unsafe_allow_html=True)
 league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapsed")
 
@@ -81,6 +82,12 @@ check_click = st.button(d[lang]["btn_check"], key="check_btn", use_container_wid
 st.markdown('</div>', unsafe_allow_html=True)
 
 if check_click:
+    # Loading Animation
+    progress_bar = st.progress(0)
+    for percent_complete in range(100):
+        time.sleep(0.01)
+        progress_bar.progress(percent_complete + 1)
+    
     with st.spinner('Checking Matches...'):
         try:
             token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
@@ -141,6 +148,12 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 if gen_click:
     if h_team and a_team and h_team != "Select Team" and h_team != "No matches found":
+        # Loading Animation
+        progress_bar = st.progress(0)
+        for percent_complete in range(100):
+            time.sleep(0.01)
+            progress_bar.progress(percent_complete + 1)
+            
         with st.spinner('AI is thinking...'):
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
@@ -152,4 +165,3 @@ if gen_click:
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-                                      
