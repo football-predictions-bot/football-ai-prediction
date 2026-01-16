@@ -82,7 +82,6 @@ check_click = st.button(d[lang]["btn_check"], key="check_btn", use_container_wid
 st.markdown('</div>', unsafe_allow_html=True)
 
 if check_click:
-    # Loading Animation
     progress_bar = st.progress(0)
     for percent_complete in range(100):
         time.sleep(0.01)
@@ -107,17 +106,30 @@ if check_click:
             matches = data.get('matches', [])
             if matches:
                 teams = set()
-                match_display_data = []
-                for m in matches:
+                st.success(f"Found {len(matches)} matches!")
+                for idx, m in enumerate(matches, 1):
                     h = m['homeTeam']['name']
                     a = m['awayTeam']['name']
+                    # UTC Time ကို မြန်မာစံတော်ချိန် ပြောင်းလဲခြင်း
+                    utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
+                    mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
+                    t_str = mm_dt.strftime("%H:%M")
+                    
                     teams.add(h)
                     teams.add(a)
-                    match_display_data.append({"Home Team": h, "Away Team": a, "Time (UTC)": m['utcDate'][11:16]})
+                    
+                    # 5 Columns Neon Yellow Row
+                    st.markdown(f"""
+                        <div class="match-row">
+                            <div class="col-no">#{idx}</div>
+                            <div class="col-time">🕒 {t_str}</div>
+                            <div class="col-team">{h}</div>
+                            <div class="col-vs">VS</div>
+                            <div class="col-team">{a}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
                 
                 st.session_state.team_list = sorted(list(teams))
-                st.success(f"Found {len(matches)} matches!")
-                st.table(match_display_data)
             else:
                 st.session_state.team_list = ["No matches found"]
                 st.warning("No matches found.")
@@ -148,7 +160,6 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 if gen_click:
     if h_team and a_team and h_team != "Select Team" and h_team != "No matches found":
-        # Loading Animation
         progress_bar = st.progress(0)
         for percent_complete in range(100):
             time.sleep(0.01)
@@ -165,3 +176,5 @@ if gen_click:
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
+
+
