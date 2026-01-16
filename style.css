@@ -1,55 +1,16 @@
 /* ၁။ UI အမှိုက်များကို နျူကလီးယားနည်းလမ်းဖြင့် အမြစ်ပြတ် ဖျောက်မည် */
 
-/* Viewer Badge (Crown Icon/Profile) */
-#viewerBadge, 
-.viewerBadge_container__1QS9N,
-div[class^="viewerBadge_container"],
-[data-testid="stStatusWidget"] {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    opacity: 0 !important;
-}
-
-/* Deploy Button & Toolbar */
-.stAppDeployButton,
-[data-testid="stAppDeployButton"],
-[data-testid="stHeaderActionElements"],
-.stAppToolbar,
-[data-testid="stToolbar"] {
-    display: none !important;
-}
-
-/* Header & Decoration */
-header, 
-[data-testid="stHeader"], 
-[data-testid="stDecoration"] {
-    display: none !important;
-    height: 0 !important;
-}
-
-/* Footer (Hosted with Streamlit) */
-footer, 
-.stFooter, 
-[data-testid="stFooter"] {
-    display: none !important;
-    visibility: hidden !important;
-}
-
-/* Menu Button (Hamburger) */
-#MainMenu {
-    display: none !important;
-}
+#viewerBadge, .viewerBadge_container__1QS9N, [data-testid="stStatusWidget"] { display: none !important; }
+.stAppDeployButton, [data-testid="stAppDeployButton"], [data-testid="stHeaderActionElements"], .stAppToolbar, [data-testid="stToolbar"] { display: none !important; }
+header, [data-testid="stHeader"], [data-testid="stDecoration"] { display: none !important; height: 0 !important; }
+footer, .stFooter, [data-testid="stFooter"], #MainMenu { display: none !important; }
 
 /* Background & Padding Fix */
 .stApp { background-color: #000000; }
 .st-emotion-cache-18ni7ap {padding: 0 !important;}
 
-/* Selectbox တွင် Keyboard ပိတ်ထားဆဲဖြစ်သော်လည်း Date Input တွင် Keyboard ပြန်ဖွင့်ပေးထားသည် */
-div[data-baseweb="select"] input {
-    caret-color: transparent !important;
-    pointer-events: none !important;
-}
+/* Selectbox Fix */
+div[data-baseweb="select"] input { caret-color: transparent !important; }
 
 /* ၂။ Gradient Text (Predictions & Select Team) */
 .title-style {
@@ -60,30 +21,6 @@ div[data-baseweb="select"] input {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 10px 0;
-    font-family: sans-serif;
-}
-
-/* --- Translate Button Glossy --- */
-.btn-blue-glossy {
-    background: linear-gradient(180deg, #00D2FF 0%, #3a7bd5 100%);
-    border-radius: 20px;
-    color: white;
-    text-align: center;
-    padding: 0;
-    font-size: 16px;
-    font-weight: 700;
-    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3), inset 0 5px 10px rgba(255, 255, 255, 0.5);
-    height: 40px; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 20;
-    pointer-events: none;
-    box-sizing: border-box !important;
 }
 
 /* ၃။ Select Boxes (Neon Green) */
@@ -94,28 +31,31 @@ div[data-baseweb="select"] > div {
     box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
 }
 
-/* ၄။ Check Matches Now (Glossy Green) */
-.btn-green-glossy {
-    background: linear-gradient(180deg, #00FF00 0%, #008000 100%);
-    border-radius: 40px;
-    color: black;
-    text-align: center;
-    padding: 0;
-    font-size: 28px;
-    font-weight: 900;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 25px rgba(0, 255, 0, 0.4), inset 0 10px 15px rgba(255, 255, 255, 0.8);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 20;
-    pointer-events: none;
-    box-sizing: border-box !important;
+/* ၄။ Glossy Button Styles (မူရင်း Button ပေါ် တိုက်ရိုက်သက်ရောက်စေရန်) */
+
+/* Blue Glossy (Language) */
+.lang-wrapper div.stButton > button {
+    background: linear-gradient(180deg, #00D2FF 0%, #3a7bd5 100%) !important;
+    border-radius: 20px !important;
+    color: white !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    height: 40px !important;
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3), inset 0 5px 10px rgba(255, 255, 255, 0.5) !important;
 }
+
+/* Green Glossy (Check Match) */
+.check-btn-wrapper div.stButton > button {
+    background: linear-gradient(180deg, #00FF00 0%, #008000 100%) !important;
+    border-radius: 40px !important;
+    color: black !important;
+    font-size: 28px !important;
+    font-weight: 900 !important;
+    height: 70px !important;
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.4), inset 0 10px 15px rgba(255, 255, 255, 0.8) !important;
+    margin-top: 20px !important;
+}
+
 /* ၅။ Match Box Container */
 .match-box-container {
     padding: 10px 0;
@@ -141,66 +81,42 @@ div[data-baseweb="select"] > div {
     font-size: 22px;
 }
 
-/* ၇။ Generate Predictions (Glossy Orange) */
-.btn-orange-glossy {
-    background: linear-gradient(180deg, #FF9500 0%, #FF4500 100%);
-    border-radius: 50px;
-    color: white;
-    text-align: center;
-    padding: 0;
-    font-size: 32px;
-    font-weight: 900;
-    height: 85px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 30px rgba(255, 69, 0, 0.5), inset 0 10px 20px rgba(255, 255, 255, 0.8);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 20;
-    pointer-events: none;
-    box-sizing: border-box !important;
+/* ၇။ Orange Glossy (Generate Predictions) */
+.gen-btn-wrapper div.stButton > button {
+    background: linear-gradient(180deg, #FF9500 0%, #FF4500 100%) !important;
+    border-radius: 50px !important;
+    color: white !important;
+    font-size: 32px !important;
+    font-weight: 900 !important;
+    height: 85px !important;
+    box-shadow: 0 10px 30px rgba(255, 69, 0, 0.5), inset 0 10px 20px rgba(255, 255, 255, 0.8) !important;
+    margin-top: 20px !important;
 }
 
-/* ၈။ Wrapper အတွင်း Coordinate အတိအကျဖြင့် တစ်ထပ်တည်းချခြင်း */
+/* ၈။ Reset Streamlit Default Styles */
 
-.lang-wrapper, .check-btn-wrapper, .gen-btn-wrapper {
-    position: relative;
-    width: 100%;
-    display: block;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Button Parent Container ရှိ မလိုလားအပ်သော Margin များ ဖယ်ရှားခြင်း */
-div.stButton {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* မူရင်း Button ကို အောက်ခံအလွှာတွင် ထားခြင်း */
+/* ခလုတ်များ၏ မူရင်း Border နှင့် Hover ကို ဖျောက်ခြင်း */
 div.stButton > button {
-    background-color: transparent !important;
-    color: transparent !important;
-    border: none !important;
     width: 100% !important;
-    position: relative !important;
-    z-index: 10;
-    display: block !important;
-    box-sizing: border-box !important;
+    border: none !important;
+    outline: none !important;
+    transition: transform 0.1s !important;
+}
+
+div.stButton > button:active {
+    transform: scale(0.98) !important;
+}
+
+/* Hover effect များကို Glossy မပျက်အောင် ထိန်းခြင်း */
+div.stButton > button:hover, div.stButton > button:focus {
+    color: inherit !important;
+    background: inherit !important;
+    box-shadow: inherit !important;
+}
+
+/* Wrapper Structure */
+.lang-wrapper, .check-btn-wrapper, .gen-btn-wrapper {
+    width: 100%;
     margin: 0 !important;
 }
 
-.lang-wrapper div.stButton > button { height: 40px !important; }
-.check-btn-wrapper div.stButton > button { height: 70px !important; margin-top: 20px !important; }
-.gen-btn-wrapper div.stButton > button { height: 85px !important; margin-top: 20px !important; }
-
-/* Hover effect အားလုံးကို ဖျက်ခြင်း */
-div.stButton > button:hover, div.stButton > button:active, div.stButton > button:focus {
-    background-color: transparent !important;
-    color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
