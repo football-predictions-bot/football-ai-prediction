@@ -54,12 +54,11 @@ league_codes = {
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Language Toggle (CSS နှင့် ကိုက်ညီအောင် ပြင်ဆင်ထားသည်)
+# Language Toggle (Original Button ကိုပဲ CSS ဖြင့် Glossy ပြောင်းထားသည်)
 col_space, col_lang = st.columns([7, 3])
 with col_lang:
     st.markdown('<div class="lang-wrapper">', unsafe_allow_html=True)
-    st.markdown(f'<div class="btn-blue-glossy">{d[lang]["trans_btn"]}</div>', unsafe_allow_html=True)
-    st.button(" ", key="lang_btn_hidden", on_click=toggle_lang, use_container_width=True)
+    st.button(d[lang]["trans_btn"], key="lang_btn", on_click=toggle_lang, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
@@ -74,8 +73,7 @@ sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.da
 
 # ၃။ Check Matches Now
 st.markdown('<div class="check-btn-wrapper">', unsafe_allow_html=True)
-st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
-check_click = st.button(" ", key="check_btn_hidden", use_container_width=True)
+check_click = st.button(d[lang]["btn_check"], key="check_btn", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 if check_click:
@@ -133,10 +131,9 @@ with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
     a_team = st.selectbox("A", [t for t in current_teams if t != h_team], key="a", label_visibility="collapsed")
 
-# ၆။ Orange Glossy Button (Generate Predictions)
+# ၆။ Orange Glossy Button (Original Button ကိုပဲ CSS ဖြင့် Glossy ပြောင်းထားသည်)
 st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
-st.markdown(f'<div class="btn-orange-glossy">{d[lang]["btn_gen"]}</div>', unsafe_allow_html=True)
-gen_click = st.button(" ", key="gen_btn_hidden", use_container_width=True)
+gen_click = st.button(d[lang]["btn_gen"], key="gen_btn", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 if gen_click:
