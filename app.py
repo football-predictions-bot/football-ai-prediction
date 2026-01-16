@@ -54,15 +54,14 @@ league_codes = {
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Language Toggle (Glossy Blue Style ဖြင့် ပြင်ဆင်ထားသည်)
+# Language Toggle
 col_space, col_lang = st.columns([7, 3])
 with col_lang:
-    # Wrapper သုံး၍ နေရာတိကျအောင်လုပ်ခြင်း
-    st.markdown('<div class="lang-wrapper">', unsafe_allow_html=True)
     with st.container():
+        st.markdown('<div class="lang-wrapper">', unsafe_allow_html=True)
         st.markdown(f'<div class="btn-blue-glossy">{d[lang]["trans_btn"]}</div>', unsafe_allow_html=True)
         st.button(" ", key="lang_btn_hidden", on_click=toggle_lang, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
@@ -71,17 +70,17 @@ st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</
 league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
-# ရက်စွဲ Option များ
 date_option = st.radio("Date Option", d[lang]['date_opts'], horizontal=True, label_visibility="collapsed")
-
-# Date Picker ကို အမြဲတမ်း ပြန်ပေါ်နေအောင် ထားရှိခြင်း
 sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
-# ၃။ Check Matches Now (Green Glossy)
-st.markdown('<div class="check-btn-wrapper">', unsafe_allow_html=True)
+# ၃။ Check Matches Now
 with st.container():
+    st.markdown('<div class="check-btn-wrapper">', unsafe_allow_html=True)
     st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
-    if st.button(" ", key="check_btn_hidden", use_container_width=True):
+    check_click = st.button(" ", key="check_btn_hidden", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    if check_click:
         with st.spinner('Checking Matches...'):
             try:
                 token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
@@ -118,10 +117,10 @@ with st.container():
                     st.warning("No matches found.")
             except Exception as e:
                 st.error(f"Error: {str(e)}")
-st.markdown('</div>', unsafe_allow_html=True)
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
+
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
 current_teams = st.session_state.team_list
@@ -138,10 +137,13 @@ with c2:
     a_team = st.selectbox("A", [t for t in current_teams if t != h_team], key="a", label_visibility="collapsed")
 
 # ၆။ Orange Glossy Button (Generate Predictions)
-st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
 with st.container():
+    st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
     st.markdown(f'<div class="btn-orange-glossy">{d[lang]["btn_gen"]}</div>', unsafe_allow_html=True)
-    if st.button(" ", key="gen_btn_hidden", use_container_width=True):
+    gen_click = st.button(" ", key="gen_btn_hidden", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    if gen_click:
         if h_team and a_team and h_team != "Select Team" and h_team != "No matches found":
             with st.spinner('AI is thinking...'):
                 try:
@@ -154,4 +156,4 @@ with st.container():
                     st.error(f"AI Error: {str(e)}")
         else:
             st.warning("Please select teams first!")
-st.markdown('</div>', unsafe_allow_html=True)
+
