@@ -13,6 +13,12 @@ footer, .stFooter, [data-testid="stFooter"], #MainMenu { display: none !importan
 div[data-baseweb="select"] input { caret-color: white !important; }
 input { caret-color: white !important; }
 
+/* Loading Bar အရောင်ကို Neon Violet ပြောင်းခြင်း */
+div[data-testid="stProgress"] > div > div > div > div {
+    background-color: #9D00FF !important;
+    box-shadow: 0 0 15px #9D00FF !important;
+}
+
 /* ၂။ Gradient Text (Predictions & Select Team) */
 .title-style {
     text-align: center;
