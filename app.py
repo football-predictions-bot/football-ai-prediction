@@ -102,7 +102,7 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
         with st.spinner('AI is thinking...'):
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-3-flash-preview')
                 prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {lang} language."
                 response = model.generate_content(prompt)
                 st.info(response.text)
