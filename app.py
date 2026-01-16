@@ -3,6 +3,14 @@ import datetime
 import requests
 import google.generativeai as genai
 
+# UI အမှိုက်များ (Menu, Toolbar, Badge) ကို လုံးဝပျောက်သွားစေရန် configuration သတ်မှတ်ခြင်း
+st.set_page_config(
+    page_title="Football AI",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+    menu_items=None
+)
+
 # ၁။ Dictionary & Session State
 if 'lang' not in st.session_state:
     st.session_state.lang = 'EN'
@@ -45,7 +53,7 @@ with open("style.css") as f:
 col_space, col_lang = st.columns([7, 3])
 with col_lang:
     st.markdown(f'<div class="btn-blue-glossy">{d[lang]["trans_btn"]}</div>', unsafe_allow_html=True)
-    st.markdown('<div class="lang-wrapper" style="margin-top:-45px;">', unsafe_allow_html=True)
+    st.markdown('<div class="lang-wrapper" style="margin-top:-45px; position: relative; z-index: 999;">', unsafe_allow_html=True)
     st.button(" ", key="lang_btn_hidden", on_click=toggle_lang, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -60,6 +68,8 @@ sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.da
 
 # ၃။ Check Matches Now (Green Glossy)
 st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
+# ခလုတ်အစစ်ကို Glossy အပေါ် ရောက်အောင် နေရာညှိခြင်း
+st.markdown('<div style="position: relative; z-index: 999;">', unsafe_allow_html=True)
 if st.button(" ", key="check_btn_hidden", use_container_width=True):
     with st.spinner('Checking Matches...'):
         try:
@@ -88,6 +98,7 @@ if st.button(" ", key="check_btn_hidden", use_container_width=True):
                 st.warning("No matches found.")
         except Exception as e:
             st.error(f"Error: {str(e)}")
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
@@ -108,12 +119,13 @@ with c2:
 
 # ၆။ Orange Glossy Button (Generate Predictions)
 st.markdown(f'<div class="btn-orange-glossy">{d[lang]["btn_gen"]}</div>', unsafe_allow_html=True)
+# ခလုတ်အစစ်ကို Glossy အပေါ် ရောက်အောင် နေရာညှိခြင်း
+st.markdown('<div style="position: relative; z-index: 999;">', unsafe_allow_html=True)
 if st.button(" ", key="gen_btn_hidden", use_container_width=True):
     if h_team and a_team and h_team != "Select Team" and h_team != "No matches found":
         with st.spinner('AI is thinking...'):
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
-                # အစ်ကို့မူရင်းအတိုင်း gemini-3-flash-preview သို့ ပြန်ပြောင်းထားသည်
                 model = genai.GenerativeModel('gemini-3-flash-preview') 
                 prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {lang} language."
                 response = model.generate_content(prompt)
@@ -122,3 +134,4 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
+st.markdown('</div>', unsafe_allow_html=True)
