@@ -1,5 +1,8 @@
-/* ၁။ Streamlit UI အပိုတွေအကုန် ဖျောက်မယ် */
-header, footer, .stDeployButton, [data-testid="stHeader"], [data-testid="stHeaderActionElements"] {display: none !important;}
+/* ၁။ Streamlit UI အပိုတွေအကုန် ဖျောက်မယ် (Badge နှင့် Toolbar ပါအပါအဝင်) */
+header, footer, .stDeployButton, [data-testid="stHeader"], [data-testid="stHeaderActionElements"], #viewerBadge, .stAppDeployButton {
+    display: none !important;
+    visibility: hidden !important;
+}
 .stApp { background-color: #000000; }
 .st-emotion-cache-18ni7ap {padding: 0 !important;}
 
@@ -15,7 +18,7 @@ header, footer, .stDeployButton, [data-testid="stHeader"], [data-testid="stHeade
     font-family: sans-serif;
 }
 
-/* --- Translate Button Glossy (အသစ်ထည့်သွင်းမှု) --- */
+/* --- Translate Button Glossy --- */
 .btn-blue-glossy {
     background: linear-gradient(180deg, #00D2FF 0%, #3a7bd5 100%);
     border-radius: 20px;
@@ -25,7 +28,7 @@ header, footer, .stDeployButton, [data-testid="stHeader"], [data-testid="stHeade
     font-size: 16px;
     font-weight: 700;
     box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3), inset 0 5px 10px rgba(255, 255, 255, 0.5);
-    pointer-events: none; /* Pointer issue အတွက် အရေးကြီးသည် */
+    pointer-events: none;
 }
 
 /* ၃။ Select Boxes (Neon Green) */
@@ -50,7 +53,7 @@ div[data-baseweb="select"] > div {
     cursor: pointer;
     transition: transform 0.1s;
     user-select: none;
-    pointer-events: none; /* Pointer issue အတွက် ထည့်သွင်းသည် */
+    pointer-events: none;
 }
 
 .btn-green-glossy:active {
@@ -58,7 +61,7 @@ div[data-baseweb="select"] > div {
     filter: brightness(0.9);
 }
 
-/* ၅။ Purple Match Box ကို ဖျက်လိုက်ပြီး သာမန် Layout အဖြစ် ပြောင်းလိုက်သည် */
+/* ၅။ Match Box Container */
 .match-box-container {
     padding: 10px 0;
     margin: 10px 0;
@@ -97,7 +100,7 @@ div[data-baseweb="select"] > div {
     cursor: pointer;
     transition: transform 0.1s;
     user-select: none;
-    pointer-events: none; /* Pointer issue အတွက် ထည့်သွင်းသည် */
+    pointer-events: none;
 }
 
 .btn-orange-glossy:active {
@@ -125,13 +128,8 @@ div.stButton > button:hover, div.stButton > button:active, div.stButton > button
     box-shadow: none !important;
 }
 
-/* Translate Button သီးသန့် နေရာချခြင်း (Optional: လိုအပ်လျှင် python ကုဒ်ထဲက နေရာနဲ့ ညှိရန်) */
+/* Translate Button နေရာညှိခြင်း */
 .lang-wrapper div.stButton > button {
     top: -45px !important;
     height: 40px !important;
-}
-    background-color: transparent !important;
-    color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
 }
