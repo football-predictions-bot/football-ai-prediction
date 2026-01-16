@@ -105,10 +105,36 @@ if st.button(" ", key="check_btn_hidden", use_container_width=True):
                 teams = set()
                 match_display_data = []
                 for m in matches:
-                    # ISO Format အချိန်ကို UTC Object ပြောင်းခြင်း
                     match_time_utc = datetime.datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00'))
+                    is_valid = True
+                    if limit_hours:
+                        diff = match_time_utc - now_utc
+                        if diff.total_seconds() < 0 or diff.total_seconds() > (limit_hours * 3600):
+                            is_valid = False
                     
-                    # ၂၄/၄၈ နာရီအတွင်း ဟုတ်မဟုတ် စစ်ဆေးခြင်း
+                    if is_valid:
+                        h = m['homeTeam']['name']
+                        a = m['awayTeam']['name']
+                        teams.add(h)
+                        teams.add(a)
+                        match_display_data.append({"Home Team": h, "Away Team": a, "Time (UTC)": m['utcDate'][11:16]})
+                
+                if match_display_data:
+                    st.session_state.team_list = sorted(list(teams))
+                    st.success(f"Found {len(match_display_data)} matches within range!")
+                    st.table(match_display_data)
+                else:
+                    st.session_state.team_list = ["No matches found in this window"]
+                    st.warning("No matches found in the exact time window.")
+            else:
+                st.session_state.team_list = ["No matches found"]
+                st.warning("No matches found for these dates.")
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ၄။ Select Team Title
+st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
                     is_valid = True
                     if limit_hours:
                         diff = match_time_utc - now_utc
@@ -217,3 +243,37 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
     else:
         st.warning("Please select teams first!")
 st.markdown('</div>', unsafe_allow_html=True)
+# ၅။ Home vs Away Section
+c1, cvs, c2 = st.columns([2, 1, 2])
+current_teams = st.session_state.team_list
+
+with c1:
+    st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["home"]}</p>', unsafe_allow_html=True)
+    h_team = st.selectbox("H", current_teams, key="h", label_visibility="collapsed")
+
+with cvs:
+    st.markdown('<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="vs-ball">vs</div></div>', unsafe_allow_html=True)
+
+with c2:
+    st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
+    a_team = st.selectbox("A", [t for t in current_teams if t != h_team], key="a", label_visibility="collapsed")
+
+# ၆။ Orange Glossy Button (Generate Predictions)
+st.markdown(f'<div class="btn-orange-glossy">{d[lang]["btn_gen"]}</div>', unsafe_allow_html=True)
+# ခလုတ်အစစ်ကို Glossy အပေါ် ရောက်အောင် နေရာညှိခြင်း
+st.markdown('<div style="position: relative; z-index: 999;">', unsafe_allow_html=True)
+if st.button(" ", key="gen_btn_hidden", use_container_width=True):
+    if h_team and a_team and h_team != "Select Team" and h_team not in ["No matches found", "No matches found in this window"]:
+        with st.spinner('AI is thinking...'):
+            try:
+                genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
+                model = genai.GenerativeModel('gemini-3-flash-preview') 
+                prompt = f"Analyze {h_team} vs {a_team} in {league}. Predict winner and score. Respond in {lang} language."
+                response = model.generate_content(prompt)
+                st.info(response.text)
+            except Exception as e:
+                st.error(f"AI Error: {str(e)}")
+    else:
+        st.warning("Please select teams first!")
+st.markdown('</div>', unsafe_allow_html=True)
+    
