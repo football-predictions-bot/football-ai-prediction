@@ -37,23 +37,25 @@ div[data-baseweb="select"] > div {
 /* Blue Glossy (Language) */
 .lang-wrapper div.stButton > button {
     background: linear-gradient(180deg, #00D2FF 0%, #3a7bd5 100%) !important;
+    border: 2px solid #00D2FF !important;
     border-radius: 20px !important;
     color: white !important;
     font-size: 16px !important;
     font-weight: 700 !important;
     height: 40px !important;
-    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3), inset 0 5px 10px rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.6), inset 0 5px 10px rgba(255, 255, 255, 0.5) !important;
 }
 
 /* Green Glossy (Check Match) */
 .check-btn-wrapper div.stButton > button {
     background: linear-gradient(180deg, #00FF00 0%, #008000 100%) !important;
+    border: 3px solid #00D2FF !important;
     border-radius: 40px !important;
     color: black !important;
     font-size: 28px !important;
     font-weight: 900 !important;
     height: 70px !important;
-    box-shadow: 0 0 25px rgba(0, 255, 0, 0.4), inset 0 10px 15px rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.8), inset 0 10px 15px rgba(255, 255, 255, 0.8) !important;
     margin-top: 20px !important;
 }
 /* ၅။ Match Box Container */
@@ -84,12 +86,13 @@ div[data-baseweb="select"] > div {
 /* ၇။ Orange Glossy (Generate Predictions) */
 .gen-btn-wrapper div.stButton > button {
     background: linear-gradient(180deg, #FF9500 0%, #FF4500 100%) !important;
+    border: 3px solid #00D2FF !important;
     border-radius: 50px !important;
     color: white !important;
     font-size: 32px !important;
     font-weight: 900 !important;
     height: 85px !important;
-    box-shadow: 0 10px 30px rgba(255, 69, 0, 0.5), inset 0 10px 20px rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 0 25px rgba(0, 210, 255, 0.8), inset 0 10px 20px rgba(255, 255, 255, 0.8) !important;
     margin-top: 20px !important;
 }
 
@@ -98,25 +101,24 @@ div[data-baseweb="select"] > div {
 /* ခလုတ်များ၏ မူရင်း Border နှင့် Hover ကို ဖျောက်ခြင်း */
 div.stButton > button {
     width: 100% !important;
-    border: none !important;
     outline: none !important;
-    transition: transform 0.1s !important;
+    transition: transform 0.1s, box-shadow 0.1s !important;
 }
 
 div.stButton > button:active {
-    transform: scale(0.98) !important;
+    transform: scale(0.96) !important;
 }
 
-/* Hover effect များကို Glossy မပျက်အောင် ထိန်းခြင်း */
+/* Hover effect များကို Glossy နှင့် Neon Blue ပေါင်းစပ်ထားခြင်း */
 div.stButton > button:hover, div.stButton > button:focus {
     color: inherit !important;
     background: inherit !important;
-    box-shadow: inherit !important;
+    border: 3px solid #00D2FF !important;
+    box-shadow: 0 0 30px rgba(0, 210, 255, 1) !important;
 }
 
 /* Wrapper Structure */
 .lang-wrapper, .check-btn-wrapper, .gen-btn-wrapper {
     width: 100%;
     margin: 0 !important;
-    }
-                                
+}
