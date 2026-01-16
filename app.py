@@ -55,7 +55,7 @@ sel_date = st.date_input("D", value=datetime.date.today(), label_visibility="col
 
 # ၃။ Check Matches Now (Green Glossy)
 st.markdown(f'<div class="btn-green-glossy">{d[lang]["btn_check"]}</div>', unsafe_allow_html=True)
-if st.button("", key="check_btn_hidden", use_container_width=True):
+if st.button(" ", key="check_btn_hidden", use_container_width=True):
     with st.spinner('Checking Matches...'):
         try:
             token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
@@ -80,7 +80,6 @@ if st.button("", key="check_btn_hidden", use_container_width=True):
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
-
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
 current_teams = st.session_state.team_list
@@ -98,7 +97,7 @@ with c2:
 
 # ၆။ Orange Glossy Button (Generate Predictions)
 st.markdown(f'<div class="btn-orange-glossy">{d[lang]["btn_gen"]}</div>', unsafe_allow_html=True)
-if st.button("", key="gen_btn_hidden", use_container_width=True):
+if st.button(" ", key="gen_btn_hidden", use_container_width=True):
     if h_team and a_team and h_team != "Select Team" and h_team != "No matches found":
         with st.spinner('AI is thinking...'):
             try:
@@ -111,3 +110,4 @@ if st.button("", key="gen_btn_hidden", use_container_width=True):
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
+        
