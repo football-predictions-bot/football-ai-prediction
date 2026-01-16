@@ -3,6 +3,11 @@ import datetime
 import requests
 import google.generativeai as genai
 
+for m in genai.list_models():
+    if 'generateContent' in m.supported_generation_methods:
+        st.write(f"သုံးလို့ရတဲ့ Model: {m.name}")
+        
+
 # UI အမှိုက်များ (Menu, Toolbar, Badge) ကို လုံးဝပျောက်သွားစေရန် configuration သတ်မှတ်ခြင်း
 st.set_page_config(
     page_title="Football AI",
