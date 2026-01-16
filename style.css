@@ -73,6 +73,10 @@ div[data-baseweb="select"] input {
     font-size: 16px;
     font-weight: 700;
     box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3), inset 0 5px 10px rgba(255, 255, 255, 0.5);
+    height: 40px; /* Height တူအောင် သတ်မှတ်ခြင်း */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     pointer-events: none;
 }
 
@@ -94,6 +98,10 @@ div[data-baseweb="select"] > div {
     font-size: 28px;
     font-weight: 900;
     margin: 20px 5px;
+    height: 70px; /* Height တူအောင် သတ်မှတ်ခြင်း */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     box-shadow: 0 0 25px rgba(0, 255, 0, 0.4), inset 0 10px 15px rgba(255, 255, 255, 0.8);
     cursor: pointer;
     transition: transform 0.1s;
@@ -140,6 +148,10 @@ div[data-baseweb="select"] > div {
     font-size: 32px;
     font-weight: 900;
     margin: 20px 5px;
+    height: 85px; /* Height တူအောင် သတ်မှတ်ခြင်း */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     box-shadow: 0 10px 30px rgba(255, 69, 0, 0.5), inset 0 10px 20px rgba(255, 255, 255, 0.8);
     cursor: pointer;
     transition: transform 0.1s;
@@ -158,11 +170,22 @@ div.stButton > button {
     color: transparent !important;
     border: none !important;
     width: 100% !important;
-    height: 60px !important;
     position: relative;
-    top: -85px; 
-    margin-bottom: -60px;
     z-index: 10;
+}
+
+/* Check Matches Now ခလုတ်အတွက် သီးသန့်နေရာညှိခြင်း */
+[data-testid="stVerticalBlock"] div:nth-child(8) div.stButton > button {
+    height: 70px !important;
+    top: -90px !important;
+    margin-bottom: -70px !important;
+}
+
+/* Generate Predictions ခလုတ်အတွက် သီးသန့်နေရာညှိခြင်း */
+[data-testid="stVerticalBlock"] div:nth-child(12) div.stButton > button {
+    height: 85px !important;
+    top: -105px !important;
+    margin-bottom: -85px !important;
 }
 
 div.stButton > button:hover, div.stButton > button:active, div.stButton > button:focus {
@@ -176,4 +199,6 @@ div.stButton > button:hover, div.stButton > button:active, div.stButton > button
 .lang-wrapper div.stButton > button {
     top: -45px !important;
     height: 40px !important;
-    }
+    margin-bottom: -40px !important;
+                                 }
+
