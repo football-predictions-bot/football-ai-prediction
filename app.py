@@ -50,14 +50,21 @@ d = {
 }
 lang = st.session_state.lang
 
-# Football-Data.org League Codes
+# Football-Data.org League Codes (Sorted by Popularity + Country)
 league_codes = {
-    "Premier League": "PL",
-    "Champions League": "CL",
-    "La Liga": "PD",
-    "Bundesliga": "BL1",
-    "Series A": "SA",
-    "Ligue 1": "FL1"
+    "All Leagues": "ALL",
+    "Premier League (England)": "PL",
+    "Champions League (Europe)": "CL",
+    "La Liga (Spain)": "PD",
+    "Bundesliga (Germany)": "BL1",
+    "Serie A (Italy)": "SA",
+    "Ligue 1 (France)": "FL1",
+    "FIFA World Cup (Global)": "WC",
+    "Euro Championship (Europe)": "EC",
+    "Championship (England)": "ELC",
+    "Eredivisie (Netherlands)": "DED",
+    "Primeira Liga (Portugal)": "PPL",
+    "Serie A (Brazil)": "BSA"
 }
 
 with open("style.css") as f:
@@ -72,9 +79,10 @@ with col_lang:
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
-# ၂။ Select League & Date
+# ၂။ Select League & Date (Default: Premier League index 1)
 st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</p>', unsafe_allow_html=True)
-league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapsed")
+league_keys = list(league_codes.keys())
+league = st.selectbox("L", league_keys, index=1, label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
 date_option = st.radio("Date Option", d[lang]['date_opts'], horizontal=True, label_visibility="collapsed")
@@ -95,15 +103,21 @@ if check_click:
         try:
             token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
             if date_option == d[lang]['date_opts'][1]: # 24 Hours
-                d_from = today_mm
-                d_to = today_mm + datetime.timedelta(days=1)
+                d_from, d_to = today_mm, today_mm + datetime.timedelta(days=1)
             elif date_option == d[lang]['date_opts'][2]: # 48 Hours
-                d_from = today_mm
-                d_to = today_mm + datetime.timedelta(days=2)
+                d_from, d_to = today_mm, today_mm + datetime.timedelta(days=2)
             else:
                 d_from = d_to = sel_date
 
-            url = f"https://api.football-data.org/v4/competitions/{league_codes[league]}/matches?dateFrom={d_from}&dateTo={d_to}"
+            # All Leagues သို့မဟုတ် သီးသန့်လိဂ် ခွဲခြားခေါ်ယူခြင်း
+            l_code = league_codes[league]
+            if l_code == "ALL":
+                # All Leagues အတွက် လူသုံးများသော လိဂ်အားလုံး၏ codes ကို join ပေးရမည် (API ကန့်သတ်ချက်အရ)
+                target_codes = ",".join([v for k, v in league_codes.items() if v != "ALL"])
+                url = f"https://api.football-data.org/v4/matches?competitions={target_codes}&dateFrom={d_from}&dateTo={d_to}"
+            else:
+                url = f"https://api.football-data.org/v4/competitions/{l_code}/matches?dateFrom={d_from}&dateTo={d_to}"
+            
             headers = {'X-Auth-Token': token}
             response = requests.get(url, headers=headers)
             data = response.json()
@@ -111,11 +125,9 @@ if check_click:
             
             st.session_state.display_matches = [] 
             if matches:
-                h_set = set()
-                a_set = set()
+                h_set, a_set = set(), set()
                 for idx, m in enumerate(matches, 1):
-                    h = m['homeTeam']['name']
-                    a = m['awayTeam']['name']
+                    h, a = m['homeTeam']['name'], m['awayTeam']['name']
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                     mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
                     t_str = mm_dt.strftime("%H:%M")
@@ -144,6 +156,7 @@ if st.session_state.display_matches:
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
+
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
 
