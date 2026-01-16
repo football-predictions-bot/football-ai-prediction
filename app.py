@@ -22,6 +22,8 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'EN'
 if 'team_list' not in st.session_state:
     st.session_state.team_list = ["Select Team"]
+if 'display_matches' not in st.session_state:
+    st.session_state.display_matches = []
 
 def toggle_lang():
     st.session_state.lang = 'MM' if st.session_state.lang == 'EN' else 'EN'
@@ -104,40 +106,42 @@ if check_click:
             response = requests.get(url, headers=headers)
             data = response.json()
             matches = data.get('matches', [])
+            
+            # ဒေတာအသစ်များကို Session State ထဲတွင် သိမ်းဆည်းခြင်း
+            st.session_state.display_matches = [] 
             if matches:
                 teams = set()
-                st.success(f"Found {len(matches)} matches!")
                 for idx, m in enumerate(matches, 1):
                     h = m['homeTeam']['name']
                     a = m['awayTeam']['name']
-                    # UTC Time ကို မြန်မာစံတော်ချိန် ပြောင်းလဲခြင်း
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                     mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
                     t_str = mm_dt.strftime("%H:%M")
-                    
                     teams.add(h)
                     teams.add(a)
-                    
-                    # 5 Columns Neon Yellow Row
-                    st.markdown(f"""
-                        <div class="match-row">
-                            <div class="col-no">#{idx}</div>
-                            <div class="col-time">🕒 {t_str}</div>
-                            <div class="col-team">{h}</div>
-                            <div class="col-vs">VS</div>
-                            <div class="col-team">{a}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-                
+                    st.session_state.display_matches.append({'idx': idx, 'time': t_str, 'home': h, 'away': a})
                 st.session_state.team_list = sorted(list(teams))
             else:
                 st.session_state.team_list = ["No matches found"]
-                st.warning("No matches found.")
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
+# Match Table ကို အမြဲတမ်းပြသနေစေရန် loop ပတ်ခြင်း
+if st.session_state.display_matches:
+    for match in st.session_state.display_matches:
+        st.markdown(f"""
+            <div class="match-row">
+                <div class="col-no">#{match['idx']}</div>
+                <div class="col-time">🕒 {match['time']}</div>
+                <div class="col-team">{match['home']}</div>
+                <div class="col-vs">VS</div>
+                <div class="col-team">{match['away']}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
+
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
 current_teams = st.session_state.team_list
@@ -176,5 +180,4 @@ if gen_click:
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-
 
