@@ -67,7 +67,7 @@ league_codes = {
     "Serie A (Brazil)": "BSA"
 }
 
-# API က ပြန်ပေးတဲ့ နာမည်ကို ကိုယ်ပြချင်တဲ့ နာမည် (နိုင်ငံပါဝင်သော) သို့ ပြောင်းရန် mapping
+# API Mapping
 league_name_map = {
     "Premier League": "Premier League (England)",
     "UEFA Champions League": "Champions League (Europe)",
@@ -142,10 +142,7 @@ if check_click:
                 h_set, a_set = set(), set()
                 for idx, m in enumerate(matches, 1):
                     h, a = m['homeTeam']['name'], m['awayTeam']['name']
-                    raw_l_name = m['competition']['name']
-                    # Display name ကို mapping ထဲကယူမည်၊ မရှိရင် raw name သုံးမည်
-                    l_display = league_name_map.get(raw_l_name, raw_l_name)
-                    
+                    l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                     mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
                     t_str = mm_dt.strftime("%H:%M")
@@ -157,50 +154,47 @@ if check_click:
                 st.session_state.h_teams = sorted(list(h_set))
                 st.session_state.a_teams = sorted(list(a_set))
             else:
-                st.session_state.h_teams = ["No matches found"]
-                st.session_state.a_teams = ["No matches found"]
+                st.session_state.h_teams, st.session_state.a_teams = ["No matches found"], ["No matches found"]
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-# ပွဲစဉ်များကို Popularity အလိုက် Group လုပ်၍ပြသခြင်း
 if st.session_state.display_matches:
     grouped_matches = {}
     for match in st.session_state.display_matches:
         grouped_matches.setdefault(match['league'], []).append(match)
-    
-    # Popularity sort: league_codes ထဲက အစဉ်အတိုင်း Group များကို စီမည်
     sorted_group_titles = [k for k in league_codes.keys() if k in grouped_matches]
-    
     for l_title in sorted_group_titles:
-        matches_list = grouped_matches[l_title]
         st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
-        for m in matches_list:
-            st.markdown(f"""
-                <div class="match-row">
-                    <div class="col-no">#{m['idx']}</div>
-                    <div class="col-time">🕒 {m['time']}</div>
-                    <div class="col-team">{m['home']}</div>
-                    <div class="col-vs">VS</div>
-                    <div class="col-team">{m['away']}</div>
-                </div>
-            """, unsafe_allow_html=True)
+        for m in grouped_matches[l_title]:
+            st.markdown(f'<div class="match-row"><div class="col-no">#{m["idx"]}</div><div class="col-time">🕒 {m["time"]}</div><div class="col-team">{m["home"]}</div><div class="col-vs">VS</div><div class="col-team">{m["away"]}</div></div>', unsafe_allow_html=True)
 
-# ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# ၅။ Home vs Away Section
+# ၅။ Home vs Away Section (Auto-Select Logic)
 c1, cvs, c2 = st.columns([2, 1, 2])
+
+# Session state မှာ ရွေးချယ်မှု သိမ်းထားရန်
+if 'h_sel' not in st.session_state: st.session_state.h_sel = st.session_state.h_teams[0]
+if 'a_sel' not in st.session_state: st.session_state.a_sel = st.session_state.a_teams[0]
+
+def update_home():
+    target = next((m for m in st.session_state.display_matches if m['away'] == st.session_state.a_key), None)
+    if target: st.session_state.h_sel = target['home']
+
+def update_away():
+    target = next((m for m in st.session_state.display_matches if m['home'] == st.session_state.h_key), None)
+    if target: st.session_state.a_sel = target['away']
 
 with c1:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["home"]}</p>', unsafe_allow_html=True)
-    h_team = st.selectbox("H", st.session_state.h_teams, key="h", label_visibility="collapsed")
+    h_team = st.selectbox("H", st.session_state.h_teams, key="h_key", index=st.session_state.h_teams.index(st.session_state.h_sel) if st.session_state.h_sel in st.session_state.h_teams else 0, on_change=update_away, label_visibility="collapsed")
 
 with cvs:
     st.markdown('<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="vs-ball">vs</div></div>', unsafe_allow_html=True)
 
 with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
-    a_team = st.selectbox("A", st.session_state.a_teams, key="a", label_visibility="collapsed")
+    a_team = st.selectbox("A", st.session_state.a_teams, key="a_key", index=st.session_state.a_teams.index(st.session_state.a_sel) if st.session_state.a_sel in st.session_state.a_teams else 0, on_change=update_home, label_visibility="collapsed")
 
 # ၆။ Orange Glossy Button
 st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
@@ -213,16 +207,15 @@ if gen_click:
         for percent_complete in range(100):
             time.sleep(0.01)
             progress_bar.progress(percent_complete + 1)
-            
         with st.spinner('AI is thinking...'):
             try:
                 genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
                 model = genai.GenerativeModel('gemini-flash-latest') 
-                prompt = f"Analyze {h_team} vs {a_team} in the league. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
+                prompt = f"Analyze {h_team} vs {a_team} in football. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
                 response = model.generate_content(prompt)
                 st.info(response.text)
             except Exception as e:
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-
+        
