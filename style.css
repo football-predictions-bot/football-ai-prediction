@@ -81,8 +81,8 @@ div[data-baseweb="select"] input {
     top: 0;
     left: 0;
     width: 100%;
-    z-index: 20; /* Original Button ထက် အပေါ်ရောက်ရန် */
-    pointer-events: none; /* အောက်က Button ဆီ ဖောက်နှိပ်ရန် */
+    z-index: 20;
+    pointer-events: none;
     box-sizing: border-box !important;
 }
 
@@ -170,6 +170,14 @@ div[data-baseweb="select"] > div {
     position: relative;
     width: 100%;
     display: block;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Button Parent Container ရှိ မလိုလားအပ်သော Margin များ ဖယ်ရှားခြင်း */
+div.stButton {
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* မူရင်း Button ကို အောက်ခံအလွှာတွင် ထားခြင်း */
@@ -186,8 +194,8 @@ div.stButton > button {
 }
 
 .lang-wrapper div.stButton > button { height: 40px !important; }
-.check-btn-wrapper div.stButton > button { height: 70px !important; margin: 20px 0 !important; }
-.gen-btn-wrapper div.stButton > button { height: 85px !important; margin: 20px 0 !important; }
+.check-btn-wrapper div.stButton > button { height: 70px !important; margin-top: 20px !important; }
+.gen-btn-wrapper div.stButton > button { height: 85px !important; margin-top: 20px !important; }
 
 /* Hover effect အားလုံးကို ဖျက်ခြင်း */
 div.stButton > button:hover, div.stButton > button:active, div.stButton > button:focus {
