@@ -16,12 +16,14 @@ d = {
     'EN': {
         'title1': 'Predictions', 'sel_league': 'Select League', 'sel_date': 'Select Date',
         'btn_check': 'Check Matches Now', 'title2': 'Select Team',
-        'home': 'HOME TEAM', 'away': 'AWAY TEAM', 'btn_gen': 'Generate Predictions'
+        'home': 'HOME TEAM', 'away': 'AWAY TEAM', 'btn_gen': 'Generate Predictions',
+        'trans_btn': 'မြန်မာဘာသာသို့ ပြောင်းရန်'
     },
     'MM': {
         'title1': 'ပွဲကြိုခန့်မှန်းချက်များ', 'sel_league': 'လိဂ်ကို ရွေးချယ်ပါ', 'sel_date': 'ရက်စွဲကို ရွေးချယ်ပါ',
         'btn_check': 'ပွဲစဉ်များကို စစ်ဆေးမည်', 'title2': 'အသင်းကို ရွေးချယ်ပါ',
-        'home': 'အိမ်ရှင်အသင်း', 'away': 'ဧည့်သည်အသင်း', 'btn_gen': 'ခန့်မှန်းချက် ထုတ်ယူမည်'
+        'home': 'အိမ်ရှင်အသင်း', 'away': 'ဧည့်သည်အသင်း', 'btn_gen': 'ခန့်မှန်းချက် ထုတ်ယူမည်',
+        'trans_btn': 'Switch to English'
     }
 }
 lang = st.session_state.lang
@@ -39,10 +41,11 @@ league_codes = {
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Language Toggle
-col_space, col_lang = st.columns([8, 2])
+# Language Toggle (Translate Button)
+col_space, col_lang = st.columns([7, 3])
 with col_lang:
-    st.button("မြန်မာ / EN", on_click=toggle_lang)
+    # အစ်ကို့ရဲ့ toggle_lang ကို အသုံးပြုထားသော Translate Button
+    st.button(d[lang]['trans_btn'], on_click=toggle_lang, use_container_width=True)
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
 
@@ -51,7 +54,6 @@ st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</
 league = st.selectbox("L", list(league_codes.keys()), label_visibility="collapsed")
 
 st.markdown(f'<p style="color:#aaa; margin-left:15px; margin-top:15px;">{d[lang]["sel_date"]}</p>', unsafe_allow_html=True)
-# ယနေ့ထက် စောသောရက်များ ရွေးမရအောင် min_value ထည့်သွင်းထားသည်
 sel_date = st.date_input("D", value=datetime.date.today(), min_value=datetime.date.today(), label_visibility="collapsed")
 
 # ၃။ Check Matches Now (Green Glossy)
@@ -68,11 +70,19 @@ if st.button(" ", key="check_btn_hidden", use_container_width=True):
             matches = data.get('matches', [])
             if matches:
                 teams = set()
+                # ဇယားထုတ်ရန်အတွက် match_list ပြင်ဆင်ခြင်း
+                match_display_data = []
                 for m in matches:
-                    teams.add(m['homeTeam']['name'])
-                    teams.add(m['awayTeam']['name'])
+                    h = m['homeTeam']['name']
+                    a = m['awayTeam']['name']
+                    teams.add(h)
+                    teams.add(a)
+                    match_display_data.append({"Home Team": h, "Away Team": a, "Time (UTC)": m['utcDate'][11:16]})
+                
                 st.session_state.team_list = sorted(list(teams))
                 st.success(f"Found {len(matches)} matches!")
+                # ပွဲစဉ်များကို ဇယားဖြင့် ဖော်ပြခြင်း
+                st.table(match_display_data)
             else:
                 st.session_state.team_list = ["No matches found"]
                 st.warning("No matches found.")
@@ -111,4 +121,4 @@ if st.button(" ", key="gen_btn_hidden", use_container_width=True):
                 st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please select teams first!")
-        
+    
