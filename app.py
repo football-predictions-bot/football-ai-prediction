@@ -26,9 +26,6 @@ if 'a_teams' not in st.session_state:
     st.session_state.a_teams = ["Select Team"]
 if 'display_matches' not in st.session_state:
     st.session_state.display_matches = []
-# Auto-sync အတွက် ထပ်တိုး state များ
-if 'sync_h' not in st.session_state: st.session_state.sync_h = "Select Team"
-if 'sync_a' not in st.session_state: st.session_state.sync_a = "Select Team"
 
 def toggle_lang():
     st.session_state.lang = 'MM' if st.session_state.lang == 'EN' else 'EN'
@@ -40,7 +37,8 @@ d = {
         'home': 'HOME TEAM', 'away': 'AWAY TEAM', 'btn_gen': 'Generate Predictions',
         'trans_btn': 'မြန်မာဘာသာသို့ ပြောင်းရန်',
         'date_opts': ["Manual Date", "Within 24 Hours", "Within 48 Hours"],
-        'ai_lang': 'English'
+        'ai_lang': 'English',
+        'no_match': 'No match found between these teams! Please check the Match Table.'
     },
     'MM': {
         'title1': 'ပွဲကြိုခန့်မှန်းချက်များ', 'sel_league': 'လိဂ်ကို ရွေးချယ်ပါ', 'sel_date': 'ရက်စွဲကို ရွေးချယ်ပါ',
@@ -48,7 +46,8 @@ d = {
         'home': 'အိမ်ရှင်အသင်း', 'away': 'ဧည့်သည်အသင်း', 'btn_gen': 'ခန့်မှန်းချက် ထုတ်ယူမည်',
         'trans_btn': 'Switch to English',
         'date_opts': ["ရက်စွဲတပ်၍ရှာမည်", "၂၄ နာရီအတွင်း", "၄၈ နာရီအတွင်း"],
-        'ai_lang': 'Burmese'
+        'ai_lang': 'Burmese',
+        'no_match': 'ရွေးထားသော ပွဲစဉ်မရှိပါ။ Match Table ကို ပြန်စစ်ပါ။'
     }
 }
 lang = st.session_state.lang
@@ -157,7 +156,8 @@ if check_click:
                 st.session_state.h_teams = sorted(list(h_set))
                 st.session_state.a_teams = sorted(list(a_set))
             else:
-                st.session_state.h_teams, st.session_state.a_teams = ["No matches found"], ["No matches found"]
+                st.session_state.h_teams = ["No matches found"]
+                st.session_state.a_teams = ["No matches found"]
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
@@ -166,60 +166,69 @@ if st.session_state.display_matches:
     grouped_matches = {}
     for match in st.session_state.display_matches:
         grouped_matches.setdefault(match['league'], []).append(match)
+    
     sorted_group_titles = [k for k in league_codes.keys() if k in grouped_matches]
+    
     for l_title in sorted_group_titles:
+        matches_list = grouped_matches[l_title]
         st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
-        for m in grouped_matches[l_title]:
-            st.markdown(f"""<div class="match-row"><div class="col-no">#{m['idx']}</div><div class="col-time">🕒 {m['time']}</div><div class="col-team">{m['home']}</div><div class="col-vs">VS</div><div class="col-team">{m['away']}</div></div>""", unsafe_allow_html=True)
+        for m in matches_list:
+            st.markdown(f"""
+                <div class="match-row">
+                    <div class="col-no">#{m['idx']}</div>
+                    <div class="col-time">🕒 {m['time']}</div>
+                    <div class="col-team">{m['home']}</div>
+                    <div class="col-vs">VS</div>
+                    <div class="col-team">{m['away']}</div>
+                </div>
+            """, unsafe_allow_html=True)
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# ၅။ Home vs Away Section (Smart Coupling Logic)
+
+# ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
-
-def sync_from_home():
-    target = next((m for m in st.session_state.display_matches if m['home'] == st.session_state.h_sync_key), None)
-    if target: st.session_state.sync_a = target['away']
-
-def sync_from_away():
-    target = next((m for m in st.session_state.display_matches if m['away'] == st.session_state.a_sync_key), None)
-    if target: st.session_state.sync_h = target['home']
 
 with c1:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["home"]}</p>', unsafe_allow_html=True)
-    h_idx = st.session_state.h_teams.index(st.session_state.sync_h) if st.session_state.sync_h in st.session_state.h_teams else 0
-    h_team = st.selectbox("H", st.session_state.h_teams, index=h_idx, key="h_sync_key", on_change=sync_from_home, label_visibility="collapsed")
-    st.session_state.sync_h = h_team
+    h_team = st.selectbox("H", st.session_state.h_teams, key="h", label_visibility="collapsed")
 
 with cvs:
     st.markdown('<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="vs-ball">vs</div></div>', unsafe_allow_html=True)
 
 with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
-    a_idx = st.session_state.a_teams.index(st.session_state.sync_a) if st.session_state.sync_a in st.session_state.a_teams else 0
-    a_team = st.selectbox("A", st.session_state.a_teams, index=a_idx, key="a_sync_key", on_change=sync_from_away, label_visibility="collapsed")
-    st.session_state.sync_a = a_team
+    a_team = st.selectbox("A", st.session_state.a_teams, key="a", label_visibility="collapsed")
 
-# ၆။ Orange Glossy Button
+# ၆။ Orange Glossy Button & Validation Logic
 st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
 gen_click = st.button(d[lang]["btn_gen"], key="gen_btn", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 if gen_click:
     if h_team and a_team and h_team not in ["Select Team", "No matches found"]:
-        progress_bar = st.progress(0)
-        for percent_complete in range(100):
-            time.sleep(0.01)
-            progress_bar.progress(percent_complete + 1)
-        with st.spinner('AI is thinking...'):
-            try:
-                genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
-                model = genai.GenerativeModel('gemini-flash-latest') 
-                prompt = f"Analyze {h_team} vs {a_team} in football. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
-                response = model.generate_content(prompt)
-                st.info(response.text)
-            except Exception as e:
-                st.error(f"AI Error: {str(e)}")
+        # Match Table ထဲမှာ ဒီပွဲရှိမရှိ စစ်ဆေးခြင်း
+        is_valid_match = any(m['home'] == h_team and m['away'] == a_team for m in st.session_state.display_matches)
+        
+        if is_valid_match:
+            progress_bar = st.progress(0)
+            for percent_complete in range(100):
+                time.sleep(0.01)
+                progress_bar.progress(percent_complete + 1)
+                
+            with st.spinner('AI is thinking...'):
+                try:
+                    genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
+                    model = genai.GenerativeModel('gemini-flash-latest') 
+                    prompt = f"Analyze {h_team} vs {a_team} in the league. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
+                    response = model.generate_content(prompt)
+                    st.info(response.text)
+                except Exception as e:
+                    st.error(f"AI Error: {str(e)}")
+        else:
+            # ပွဲမရှိပါက Error ပေးခြင်း
+            st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
+        
