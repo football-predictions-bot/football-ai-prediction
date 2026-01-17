@@ -4,7 +4,6 @@ import requests
 import google.generativeai as genai
 import time
 
-
 # UI အမှိုက်များ (Menu, Toolbar, Badge) ကို လုံးဝပျောက်သွားစေရန် configuration သတ်မှတ်ခြင်း
 st.set_page_config(
     page_title="Football AI",
@@ -60,13 +59,7 @@ league_codes = {
     "La Liga (Spain)": "PD",
     "Bundesliga (Germany)": "BL1",
     "Serie A (Italy)": "SA",
-    "Ligue 1 (France)": "FL1",
-    "FIFA World Cup (Global)": "WC",
-    "Euro Championship (Europe)": "EC",
-    "Championship (England)": "ELC",
-    "Eredivisie (Netherlands)": "DED",
-    "Primeira Liga (Portugal)": "PPL",
-    "Serie A (Brazil)": "BSA"
+    "Ligue 1 (France)": "FL1"
 }
 
 # API Mapping
@@ -76,13 +69,7 @@ league_name_map = {
     "Primera Division": "La Liga (Spain)",
     "Bundesliga": "Bundesliga (Germany)",
     "Serie A": "Serie A (Italy)",
-    "Ligue 1": "Ligue 1 (France)",
-    "FIFA World Cup": "FIFA World Cup (Global)",
-    "European Championship": "Euro Championship (Europe)",
-    "Championship": "Championship (England)",
-    "Eredivisie": "Eredivisie (Netherlands)",
-    "Primeira Liga": "Primeira Liga (Portugal)",
-    "Campeonato Brasileiro Série A": "Serie A (Brazil)"
+    "Ligue 1": "Ligue 1 (France)"
 }
 
 with open("style.css") as f:
@@ -185,7 +172,6 @@ if st.session_state.display_matches:
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
-
 
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
