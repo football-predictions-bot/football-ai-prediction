@@ -129,7 +129,7 @@ if check_click:
             st.session_state.display_matches = [] 
             if matches:
                 h_set, a_set = set(), set()
-                for idx, m in enumerate(matches, 1):
+                for m in matches:
                     h, a = m['homeTeam']['name'], m['awayTeam']['name']
                     l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
@@ -138,7 +138,7 @@ if check_click:
                     h_set.add(h)
                     a_set.add(a)
                     st.session_state.display_matches.append({
-                        'idx': idx, 'time': t_str, 'home': h, 'away': a, 'league': l_display
+                        'time': t_str, 'home': h, 'away': a, 'league': l_display
                     })
                 st.session_state.h_teams = sorted(list(h_set))
                 st.session_state.a_teams = sorted(list(a_set))
@@ -159,10 +159,11 @@ if st.session_state.display_matches:
     for l_title in sorted_group_titles:
         matches_list = grouped_matches[l_title]
         st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
-        for m in matches_list:
+        # ဤနေရာတွင် နံပါတ်စဉ်ကို ၁ မှ ပြန်စရန် enumerate သုံးထားပါသည်
+        for idx, m in enumerate(matches_list, 1):
             st.markdown(f"""
                 <div class="match-row">
-                    <div class="col-no">#{m['idx']}</div>
+                    <div class="col-no">#{idx}</div>
                     <div class="col-time">🕒 {m['time']}</div>
                     <div class="col-team">{m['home']}</div>
                     <div class="col-vs">VS</div>
@@ -217,4 +218,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-        
+                    
