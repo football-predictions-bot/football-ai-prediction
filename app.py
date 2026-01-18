@@ -201,14 +201,13 @@ if st.session_state.display_matches:
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# --- Helper: AI Key Rotation (With Temperature 0 for Maximum Consistency) ---
+# --- Helper: AI Key Rotation ---
 def get_gemini_response_rotated(prompt):
     ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
     
     for key in ai_keys:
         try:
             genai.configure(api_key=key)
-            # Temperature ကို 0 ထားခြင်းဖြင့် အဖြေများ အမြဲတမ်း တည်ငြိမ်နေစေသည်
             model = genai.GenerativeModel(
                 'gemini-flash-latest',
                 generation_config={"temperature": 0}
@@ -252,53 +251,71 @@ if gen_click:
                 expiry_dt = match_utc + datetime.timedelta(hours=1)
                 expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
                 
-                # Cache key မှ lang ကို ဖြုတ်လိုက်ပါသည် (Data တစ်ခုတည်းကို နှစ်ဘာသာသုံးရန်)
-                cache_key = f"pred_master_{h_team}_{a_team}_{today_mm}"
-                cached_result = get_disk_cache(cache_key)
+                # Master Cache Key
+                cache_key = f"master_pred_stable_{h_team}_{a_team}_{today_mm}"
+                cached_data = get_disk_cache(cache_key)
 
-                if cached_result:
-                    # Cache ရှိပါက user ရွေးထားသော language အပိုင်းကိုသာ ဖြတ်ထုတ်ပြမည်
-                    parts = cached_result.split("---LANG_SPLIT---")
-                    display_text = parts[1] if lang == "Burmese" else parts[0]
-                    st.markdown(display_text, unsafe_allow_html=True)
+                if cached_data and "---SPLIT---" in cached_data:
+                    parts = cached_data.split("---SPLIT---")
+                    final_output = parts[1] if lang == "Burmese" else parts[0]
+                    st.markdown(final_output, unsafe_allow_html=True)
                 else:
-                    # --- AI Prompt (Requesting Dual Language in one call) ---
+                    # --- AI Prompt (Exactly as you requested) ---
                     prompt = f"""
-                    Analyze {h_team} (Home) vs {a_team} (Away).
-                    Respond in two parts separated by '---LANG_SPLIT---'. 
-                    First part in English, Second part in Burmese.
+                    Analyze {h_team} vs {a_team}.
+                    Respond in 2 sections separated by '---SPLIT---'. 
+                    Section 1: English language, Section 2: Burmese language.
+                    Predictions MUST be identical in both sections.
 
-                    LOGIC: 
-                    1. Goal U/O must match Correct Score.
-                    2. Best Pick must be SAFEST (Avoid Correct Score as best pick).
-                    3. Both English and Burmese analyses MUST have identical betting predictions.
+                    IMPORTANT LOGIC RULE:
+                    Your prediction for "Goal Under/Over" MUST match your "Correct Score".
+                    (Example: If score is 1-1, Goal MUST be Under 2.5. If score is 3-0, Goal MUST be Over 2.5).
 
-                    FORMAT FOR BOTH PARTS:
-                    # Analysis / သုံးသပ်ချက်
-                    **[Team] Form** (5 lines)
-                    **[Team] Form** (5 lines)
-                    **H2H** (5 lines)
-                    **Home/Away Condition** (5 lines)
-                    ### **Summarize Table** (Markdown Table)
-                    # 🏆 **Best Pick: [Result]**
-                    **Reasoning:** (6 lines)
+                    Criteria for Best Pick: 
+                    From the 6 categories, select the ONE that is the SAFEST (Avoid Correct Score as best pick).
+
+                    OUTPUT FORMAT (Repeat this for both English and Burmese):
+
+                    သုံးသပ်ချက် (စာလုံးအကြီး)
+
+                    **Home Team Form** (Bold colour)
+                    အိမ်ကွင်းရဲ့ နောက်ဆုံး5 ပွဲအခြေအနေကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ။
+
+                    **Away Team Form** (Bold colour)
+                    အဝေးကွင်းရဲ့ နောက်ဆုံး 5ပွဲ အခြေအနေကို စာ 5ကြောင်းခန့် သုံးသပ်ပါ။
+
+                    **ထိပ်တိုက်တွေ့ဆုံမှု** (Bold colour)
+                    H to H နောက်ဆုံး 5 ပွဲ အခြေအနေ ကို စာ 5ကြောင်းခန့် သုံးသပ်ပါ။
+
+                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ** (Bold colour)
+                    နှစ်သင်းကြား အိမ်ကွင်း အဝေးကွင်း ကွာခြားခက်ကို စာ5 ကြောင်းခန့် သုံးသပ်ပါ။
+
+                    ### **Summarize Table (all Bold colour)**
+                    | Category | Prediction |
+                    | :--- | :--- |
+                    | Winner Team | ... |
+                    | Correct Score | ... |
+                    | Goal under/over | ... |
+                    | Corners under/over | ... |
+                    | Yellow Card under/over | ... |
+                    | Both Teams To Score yes/no | ... |
+
+                    # **[အဲ့ 6ခုတည်းက အဖြစ်နိုင်ဆုံးတစ်ခုကို စာလုံးကြီးကြီး Bold colourနဲ့ သီးသန့် ဖော်ပြပါ။]**
+
+                    Reasoning ကို စာ 6 ကြောင်းဖြင့် ဖော်ပြပါ။
                     """
                     
                     raw_response = get_gemini_response_rotated(prompt)
                     
-                    if "---LANG_SPLIT---" in raw_response:
-                        parts = raw_response.split("---LANG_SPLIT---")
-                        # CSS Styling ထည့်သွင်းခြင်း
-                        en_html = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{parts[0]}</div>'
-                        mm_html = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{parts[1]}</div>'
+                    if "---SPLIT---" in raw_response:
+                        res_parts = raw_response.split("---SPLIT---")
+                        en_html = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{res_parts[0].strip()}</div>'
+                        mm_html = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{res_parts[1].strip()}</div>'
                         
-                        # Cache ထဲတွင် နှစ်မျိုးလုံးပေါင်းသိမ်းသည်
-                        master_cache = f"{en_html}---LANG_SPLIT---{mm_html}"
-                        set_disk_cache(cache_key, master_cache, expiry_dt=expiry_dt_naive)
-                        
+                        set_disk_cache(cache_key, f"{en_html}---SPLIT---{mm_html}", expiry_dt=expiry_dt_naive)
                         st.markdown(mm_html if lang == "Burmese" else en_html, unsafe_allow_html=True)
                     else:
-                        st.write(raw_response)
+                        st.markdown(f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{raw_response}</div>', unsafe_allow_html=True)
         else:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
