@@ -201,33 +201,103 @@ if st.session_state.display_matches:
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# --- Helper: AI Key Rotation (Final Debug Version) ---
+# --- Helper: AI Key Rotation ---
 def get_gemini_response_rotated(prompt):
-    ai_keys = []
-    try:
-        # Key တွေကို စစ်ဆေးမယ်
-        ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
-    except Exception as e:
-        return f"⚠️ Secrets Error: {str(e)}"
-
-    error_messages = []
+    # Gemini Key 3 ခုကို အလှည့်ကျ စမ်းသပ်ခြင်း
+    ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
+    error_log = []
+    
     for i, key in enumerate(ai_keys):
         try:
             genai.configure(api_key=key)
-            # Model Name ကို အစ်ကိုသုံးနေကျ gemini-flash-latest ပဲ ထားထားပါတယ်
             model = genai.GenerativeModel('gemini-flash-latest')
-            response = model.generate_content(prompt)
-            
-            # Safety Filter ကြောင့် Block ခံရခြင်း ရှိမရှိ စစ်ဆေးခြင်း
-            if response.candidates:
-                return response.text
-            else:
-                error_messages.append(f"Key {i+1}: Blocked by Safety Filters (Gambling content?)")
+            return model.generate_content(prompt).text
         except Exception as e:
-            error_messages.append(f"Key {i+1} Error: {str(e)}")
+            # Error တစ်ခုချင်းစီကို မှတ်ထားမည်
+            error_log.append(f"Key {i+1}: {str(e)}")
             continue 
-            
-    # Busy ပြမည့်အစား ဘာကြောင့် မရလဲဆိုတာကို အကုန်ထုတ်ပြမယ်
-    error_details = "<br>".join(error_messages)
-    return f"⚠️ AI ERROR DETAILS:<br>{error_details}"
+
+    # Error အားလုံးကို စုစည်းပြီး ပြန်ထုတ်ပေးခြင်း (Busy စာသားအစား)
+    return "⚠️ DEBUG ERROR LOGS:<br>" + "<br>".join(error_log)
+
+# ၅။ Home vs Away Section
+c1, cvs, c2 = st.columns([2, 1, 2])
+
+with c1:
+    st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["home"]}</p>', unsafe_allow_html=True)
+    h_team = st.selectbox("H", st.session_state.h_teams, key="h", label_visibility="collapsed")
+
+with cvs:
+    st.markdown('<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="vs-ball">vs</div></div>', unsafe_allow_html=True)
+
+with c2:
+    st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
+    a_team = st.selectbox("A", st.session_state.a_teams, key="a", label_visibility="collapsed")
+
+# ၆။ Orange Glossy Button & Validation Logic
+st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
+gen_click = st.button(d[lang]["btn_gen"], key="gen_btn", use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+if gen_click:
+    if h_team and a_team and h_team not in ["Select Team", "No matches found"]:
+        # Match Table ထဲမှ ပွဲစဉ်ကို ရှာဖွေခြင်း
+        match_obj = next((m for m in st.session_state.display_matches if m['home'] == h_team and m['away'] == a_team), None)
+        
+        if match_obj:
+            progress_bar = st.progress(0)
+            for percent_complete in range(100):
+                time.sleep(0.01)
+                progress_bar.progress(percent_complete + 1)
+                
+            with st.spinner('AI is analyzing stats & H2H...'):
+                # --- Cache Expiry Logic ---
+                match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ")
+                expiry_dt = match_utc + datetime.timedelta(hours=1)
+                expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
+                
+                # Check Disk Cache
+                cache_key = f"pred_{h_team}_{a_team}_{today_mm}"
+                cached_result = get_disk_cache(cache_key)
+
+                if cached_result:
+                    st.markdown(cached_result, unsafe_allow_html=True)
+                else:
+                    # --- AI Prompt Construction ---
+                    prompt = f"""
+                    ROLE: Expert Football Analyst.
+                    TASK: Analyze {h_team} (Home) vs {a_team} (Away).
+                    
+                    CRITICAL ANALYSIS POINTS:
+                    1. **Home/Away Variance:** အိမ်ရှင် {h_team} သည် အိမ်ကွင်းတွင် အားကောင်းမှု ရှိမရှိ နှင့် ဧည့်သည် {a_team} သည် အဝေးကွင်းတွင် ဂိုးပေးရမှု များမများ သေချာသုံးသပ်ပါ။
+                    2. **Head-to-Head (H2H):** အစဉ်အလာအရ ဘယ်သူက အသာစီးရလဲ (Bogey Team ဟုတ်မဟုတ်) ထည့်သွင်းစဉ်းစားပါ။
+                    3. **Reasoning:** ခန့်မှန်းရခြင်း၏ အကျိုးအကြောင်းကို မတိုမရှည် ရှင်းပြပါ။
+                    
+                    OUTPUT FORMAT (Markdown ကိုသုံး၍ အရောင်အသွေး စာလုံးအကြီးများဖြင့် ဖော်ပြပါ):
+                    
+                    # 🏆 WINNER: [Team Name] ([Probability %])
+                    # ⚽ CORRECT SCORE: [Score]
+                    # 🥅 GOALS: [Over/Under 2.5]
+                    # 🚩 CORNERS: [Over/Under]
+                    # 🟨 CARDS: [Over/Under]
+                    
+                    ## 📝 REASONING
+                    [အိမ်ကွင်း/အဝေးကွင်း ကွာခြားချက်နှင့် H2H အချက်အလက်များအပေါ် အခြေခံ၍ အကျိုးအကြောင်း ရှင်းလင်းချက်ကို ဤနေရာတွင် ရေးရန်။]
+                    
+                    Respond in {d[lang]['ai_lang']} language.
+                    """
+                    
+                    response_text = get_gemini_response_rotated(prompt)
+                    
+                    # Formatting Result
+                    final_output = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{response_text}</div>'
+                    
+                    # Save to Disk Cache
+                    set_disk_cache(cache_key, final_output, expiry_dt=expiry_dt_naive)
+                    
+                    st.markdown(final_output, unsafe_allow_html=True)
+        else:
+            st.error(f"⚠️ {d[lang]['no_match']}")
+    else:
+        st.warning("Please select teams first!")
 
