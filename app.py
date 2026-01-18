@@ -254,32 +254,43 @@ if gen_click:
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # --- AI Prompt (Updated with Summary Table & Language Force) ---
+                    # --- AI Prompt (Detailed Custom Form) ---
                     prompt = f"""
-                    ROLE: Expert Football Analyst.
-                    TASK: Analyze {h_team} (Home) vs {a_team} (Away).
-                    LANGUAGE: You MUST respond in {d[lang]['ai_lang']} language only. If {d[lang]['ai_lang']} is Burmese, use Burmese characters.
-                    
-                    CRITICAL ANALYSIS POINTS:
-                    1. Home/Away Variance: Analyze {h_team} home strength and {a_team} away weakness.
-                    2. H2H & Form: Recent 5 matches and historical dominance.
-                    
+                    ROLE: Professional Football Analyst.
+                    TASK: Analyze {h_team} vs {a_team}.
+                    LANGUAGE: Respond strictly in {d[lang]['ai_lang']} language using Burmese characters.
+
                     OUTPUT FORMAT:
-                    # 🏆 WINNER: [Team Name] ([Probability %])
-                    # ⚽ SCORE: [Score]
-                    
-                    ## 📝 REASONING
-                    [Provide concise reasoning in {d[lang]['ai_lang']}]
+
+                    # သုံးသပ်ချက်
+
+                    **{h_team} Form**
+                    (အိမ်ကွင်း၏ နောက်ဆုံး 5 ပွဲအခြေအနေကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ)
+
+                    **{a_team} Form**
+                    (အဝေးကွင်း၏ နောက်ဆုံး 5 ပွဲ အခြေအနေကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ)
+
+                    **ထိပ်တိုက်တွေ့ဆုံမှု (H2H)**
+                    (H2H နောက်ဆုံး 5 ပွဲ အခြေအနေကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ)
+
+                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ**
+                    (နှစ်သင်းကြား အိမ်ကွင်း အဝေးကွင်း ကွာခြားချက်ကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ)
 
                     ---
-                    ### 📊 SUMMARY TABLE
-                    | Category | Prediction |
+                    ### **Summarize Table**
+                    | **Category** | **Prediction** |
                     | :--- | :--- |
                     | **Winner Team** | [Team Name] |
-                    | **Correct Score** | [Score] |
-                    | **Goals (Over/Under 2.5)** | [Result] |
-                    | **Corners (Over/Under)** | [Result] |
-                    | **Yellow Cards (Over/Under)** | [Result] |
+                    | **Correct Score** | [Result] |
+                    | **Goal Under/Over** | [Result] |
+                    | **Corners Under/Over** | [Result] |
+                    | **Yellow Card Under/Over** | [Result] |
+                    | **Both Teams To Score** | [Yes/No] |
+
+                    # **[အပေါ်က ၆ ခုထဲမှ အဖြစ်နိုင်ဆုံးတစ်ခုကို ဤနေရာတွင် စာလုံးကြီးကြီး Bold ဖြင့် သီးသန့်ဖော်ပြပါ]**
+
+                    **Reasoning:**
+                    (ခန့်မှန်းချက်အတွက် အကျိုးအကြောင်းကို စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
                     """
                     
                     response_text = get_gemini_response_rotated(prompt)
@@ -291,4 +302,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-                
+        
