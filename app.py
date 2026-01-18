@@ -201,14 +201,18 @@ if st.session_state.display_matches:
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# --- Helper: AI Key Rotation ---
+# --- Helper: AI Key Rotation (With Temperature Fixed for Consistent Results) ---
 def get_gemini_response_rotated(prompt):
     ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
     
     for key in ai_keys:
         try:
             genai.configure(api_key=key)
-            model = genai.GenerativeModel('gemini-flash-latest')
+            # Temperature ကို 0.1 ထားခြင်းဖြင့် ရလဒ်များ ပြောင်းလဲမှုမရှိအောင် ထိန်းချုပ်ထားသည်
+            model = genai.GenerativeModel(
+                'gemini-flash-latest',
+                generation_config={"temperature": 0.1}
+            )
             return model.generate_content(prompt).text
         except Exception:
             continue 
@@ -248,21 +252,23 @@ if gen_click:
                 expiry_dt = match_utc + datetime.timedelta(hours=1)
                 expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
                 
-                cache_key = f"pred_{h_team}_{a_team}_{today_mm}"
+                # Cache key တွင် lang ထည့်ပေါင်းထားသဖြင့် Language နှစ်မျိုးလုံးအတွက် caching file သီးခြားစီ သိမ်းပေးပါမည်
+                cache_key = f"pred_{h_team}_{a_team}_{today_mm}_{lang}"
                 cached_result = get_disk_cache(cache_key)
 
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # --- AI Prompt (Detailed Logic & Custom Form) ---
+                    # --- AI Prompt (Updated with Risk Management & Logic) ---
                     prompt = f"""
-                    ROLE: Professional Football Analyst.
+                    ROLE: Expert Football Analyst & Risk Manager.
                     TASK: Analyze {h_team} (Home) vs {a_team} (Away).
                     LANGUAGE: Respond strictly in {d[lang]['ai_lang']} language only. Use Burmese characters.
 
-                    IMPORTANT LOGIC RULE:
-                    Your prediction for "Goal Under/Over 2.5" MUST match your "Correct Score". 
-                    (Example: If score is 1-1 or 2-0, Goal MUST be Under 2.5. If score is 2-1 or 3-0, Goal MUST be Over 2.5).
+                    IMPORTANT LOGIC RULES:
+                    1. "Goal Under/Over 2.5" MUST match your "Correct Score" prediction.
+                    2. BEST PICK SELECTION: From the 6 categories, select the ONE that has the HIGHEST win probability and LOWEST risk.
+                    3. AVOID "Correct Score" as the Best Pick. Prioritize safer options like Winner, Goal O/U, or BTTS.
 
                     OUTPUT FORMAT:
 
@@ -290,10 +296,10 @@ if gen_click:
                     | **Yellow Card Under/Over** | [Result] |
                     | **Both Teams To Score** | [Yes/No] |
 
-                    # **[အပေါ်က ၆ ခုထဲမှ အဖြစ်နိုင်ဆုံးတစ်ခုကို ဤနေရာတွင် စာလုံးကြီးကြီး Bold ဖြင့် သီးသန့်ဖော်ပြပါ]**
+                    # 🏆 **အဖြစ်နိုင်ဆုံးနှင့် အန္တရာယ်အကင်းဆုံးရွေးချယ်မှု: [SAFEST PICK ကို ဤနေရာတွင် စာလုံးကြီးကြီး Bold ဖြင့်ပြပါ]**
 
                     **Reasoning:**
-                    (ခန့်မှန်းချက်အတွက် အကျိုးအကြောင်းကို စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
+                    (ဤရွေးချယ်မှုသည် အဘယ်ကြောင့် Risk အနည်းဆုံးဖြစ်သည်ကို စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
                     """
                     
                     response_text = get_gemini_response_rotated(prompt)
