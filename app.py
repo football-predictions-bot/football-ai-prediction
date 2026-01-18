@@ -251,72 +251,61 @@ if gen_click:
                 expiry_dt = match_utc + datetime.timedelta(hours=1)
                 expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
                 
-                # Master Cache Key
-                cache_key = f"master_v3_{h_team}_{a_team}_{today_mm}"
-                cached_data = get_disk_cache(cache_key)
+                # Cache key မှ lang ကို ဖြုတ်လိုက်ပါသည် (အမြဲတမ်း မြန်မာလိုပဲ သိမ်းမည်)
+                cache_key = f"pred_fixed_mm_{h_team}_{a_team}_{today_mm}"
+                cached_result = get_disk_cache(cache_key)
 
-                if cached_data and "---SPLIT---" in cached_data:
-                    parts = cached_data.split("---SPLIT---")
-                    final_output = parts[1] if lang == "Burmese" else parts[0]
-                    st.markdown(final_output, unsafe_allow_html=True)
+                if cached_result:
+                    st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # --- Optimized Dual Language Prompt ---
+                    # --- AI Prompt (Strictly Burmese Only) ---
                     prompt = f"""
-                    Analyze {h_team} vs {a_team}.
-                    You MUST provide the response in TWO distinct sections.
-                    Use '---SPLIT---' as the only separator between sections.
+                    Analyze {h_team} (Home) vs {a_team} (Away).
+                    Respond strictly in BURMESE language only using Unicode characters.
 
-                    Section 1: Write in English.
-                    Section 2: Write in Burmese (Unicode characters).
+                    IMPORTANT LOGIC RULE:
+                    Your prediction for "Goal Under/Over" MUST match your "Correct Score".
+                    (Example: If score is 1-1, Goal MUST be Under 2.5. If score is 3-0, Goal MUST be Over 2.5).
 
-                    **CRITICAL RULES:**
-                    1. Predictions (Scores, Winner, etc.) must be EXACTLY the same in both sections.
-                    2. IMPORTANT LOGIC RULE: Your prediction for "Goal Under/Over" MUST match your "Correct Score". (Example: 1-1 = Under 2.5, 3-0 = Over 2.5).
-                    3. BEST PICK: Select the SAFEST option (Avoid Correct Score as best pick).
+                    Criteria for Best Pick: 
+                    From the 6 categories, select the ONE that is the SAFEST (Avoid Correct Score as best pick).
 
-                    **EACH SECTION MUST FOLLOW THIS FORMAT:**
+                    OUTPUT FORMAT:
 
                     # သုံးသပ်ချက်
-                    **Home Team Form**
-                    (5 lines analysis)
 
-                    **Away Team Form**
-                    (5 lines analysis)
+                    **{h_team} Form**
+                    အိမ်ကွင်း၏ နောက်ဆုံး 5 ပွဲအခြေအနေကို စာ 5 ကြောင်းခန့် မြန်မာလို သုံးသပ်ပါ။
+
+                    **{a_team} Form**
+                    အဝေးကွင်း၏ နောက်ဆုံး 5 ပွဲ အခြေအနေကို စာ 5 ကြောင်းခန့် မြန်မာလို သုံးသပ်ပါ။
 
                     **ထိပ်တိုက်တွေ့ဆုံမှု**
-                    (5 lines analysis)
+                    H2H နောက်ဆုံး 5 ပွဲ အခြေအနေကို စာ 5 ကြောင်းခန့် မြန်မာလို သုံးသပ်ပါ။
 
                     **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ**
-                    (5 lines analysis)
+                    နှစ်သင်းကြား အိမ်ကွင်း အဝေးကွင်း ကွာခြားချက်ကို စာ 5 ကြောင်းခန့် မြန်မာလို သုံးသပ်ပါ။
 
                     ### **Summarize Table**
                     | Category | Prediction |
                     | :--- | :--- |
-                    | Winner Team | ... |
-                    | Correct Score | ... |
-                    | Goal under/over | ... |
-                    | Corners under/over | ... |
-                    | Yellow Card under/over | ... |
-                    | Both Teams To Score yes/no | ... |
+                    | Winner Team | [မြန်မာလိုဖြေပါ] |
+                    | Correct Score | [Result] |
+                    | Goal under/over | [Result] |
+                    | Corners under/over | [Result] |
+                    | Yellow Card under/over | [Result] |
+                    | Both Teams To Score yes/no | [Result] |
 
-                    # **[🏆 BEST PICK IN BOLD]**
+                    # **🏆 အဖြစ်နိုင်ဆုံးနှင့် အန္တရာယ်အကင်းဆုံးရွေးချယ်မှု: [ရလဒ်ကို ဤနေရာတွင် Bold ဖြင့်ပြပါ]**
 
-                    Reasoning: (6 lines)
+                    Reasoning: (ခန့်မှန်းချက်အတွက် အကျိုးအကြောင်းကို မြန်မာလို စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
                     """
                     
-                    raw_response = get_gemini_response_rotated(prompt)
+                    response_text = get_gemini_response_rotated(prompt)
+                    final_output = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{response_text}</div>'
                     
-                    if "---SPLIT---" in raw_response:
-                        res_parts = raw_response.split("---SPLIT---")
-                        # HTML wrapper
-                        en_html = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{res_parts[0].strip()}</div>'
-                        mm_html = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{res_parts[1].strip()}</div>'
-                        
-                        set_disk_cache(cache_key, f"{en_html}---SPLIT---{mm_html}", expiry_dt=expiry_dt_naive)
-                        st.markdown(mm_html if lang == "Burmese" else en_html, unsafe_allow_html=True)
-                    else:
-                        # Fail-safe: If AI fails to split, just show what it gave
-                        st.markdown(f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{raw_response}</div>', unsafe_allow_html=True)
+                    set_disk_cache(cache_key, final_output, expiry_dt=expiry_dt_naive)
+                    st.markdown(final_output, unsafe_allow_html=True)
         else:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
