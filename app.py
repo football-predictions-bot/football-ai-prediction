@@ -252,7 +252,7 @@ if gen_click:
                 expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
                 
                 # Master Cache Key
-                cache_key = f"master_pred_stable_{h_team}_{a_team}_{today_mm}"
+                cache_key = f"master_v3_{h_team}_{a_team}_{today_mm}"
                 cached_data = get_disk_cache(cache_key)
 
                 if cached_data and "---SPLIT---" in cached_data:
@@ -260,37 +260,36 @@ if gen_click:
                     final_output = parts[1] if lang == "Burmese" else parts[0]
                     st.markdown(final_output, unsafe_allow_html=True)
                 else:
-                    # --- AI Prompt (Exactly as you requested) ---
+                    # --- Optimized Dual Language Prompt ---
                     prompt = f"""
                     Analyze {h_team} vs {a_team}.
-                    Respond in 2 sections separated by '---SPLIT---'. 
-                    Section 1: English language, Section 2: Burmese language.
-                    Predictions MUST be identical in both sections.
+                    You MUST provide the response in TWO distinct sections.
+                    Use '---SPLIT---' as the only separator between sections.
 
-                    IMPORTANT LOGIC RULE:
-                    Your prediction for "Goal Under/Over" MUST match your "Correct Score".
-                    (Example: If score is 1-1, Goal MUST be Under 2.5. If score is 3-0, Goal MUST be Over 2.5).
+                    Section 1: Write in English.
+                    Section 2: Write in Burmese (Unicode characters).
 
-                    Criteria for Best Pick: 
-                    From the 6 categories, select the ONE that is the SAFEST (Avoid Correct Score as best pick).
+                    **CRITICAL RULES:**
+                    1. Predictions (Scores, Winner, etc.) must be EXACTLY the same in both sections.
+                    2. IMPORTANT LOGIC RULE: Your prediction for "Goal Under/Over" MUST match your "Correct Score". (Example: 1-1 = Under 2.5, 3-0 = Over 2.5).
+                    3. BEST PICK: Select the SAFEST option (Avoid Correct Score as best pick).
 
-                    OUTPUT FORMAT (Repeat this for both English and Burmese):
+                    **EACH SECTION MUST FOLLOW THIS FORMAT:**
 
-                    သုံးသပ်ချက် (စာလုံးအကြီး)
+                    # သုံးသပ်ချက်
+                    **Home Team Form**
+                    (5 lines analysis)
 
-                    **Home Team Form** (Bold colour)
-                    အိမ်ကွင်းရဲ့ နောက်ဆုံး5 ပွဲအခြေအနေကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ။
+                    **Away Team Form**
+                    (5 lines analysis)
 
-                    **Away Team Form** (Bold colour)
-                    အဝေးကွင်းရဲ့ နောက်ဆုံး 5ပွဲ အခြေအနေကို စာ 5ကြောင်းခန့် သုံးသပ်ပါ။
+                    **ထိပ်တိုက်တွေ့ဆုံမှု**
+                    (5 lines analysis)
 
-                    **ထိပ်တိုက်တွေ့ဆုံမှု** (Bold colour)
-                    H to H နောက်ဆုံး 5 ပွဲ အခြေအနေ ကို စာ 5ကြောင်းခန့် သုံးသပ်ပါ။
+                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ**
+                    (5 lines analysis)
 
-                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ** (Bold colour)
-                    နှစ်သင်းကြား အိမ်ကွင်း အဝေးကွင်း ကွာခြားခက်ကို စာ5 ကြောင်းခန့် သုံးသပ်ပါ။
-
-                    ### **Summarize Table (all Bold colour)**
+                    ### **Summarize Table**
                     | Category | Prediction |
                     | :--- | :--- |
                     | Winner Team | ... |
@@ -300,21 +299,23 @@ if gen_click:
                     | Yellow Card under/over | ... |
                     | Both Teams To Score yes/no | ... |
 
-                    # **[အဲ့ 6ခုတည်းက အဖြစ်နိုင်ဆုံးတစ်ခုကို စာလုံးကြီးကြီး Bold colourနဲ့ သီးသန့် ဖော်ပြပါ။]**
+                    # **[🏆 BEST PICK IN BOLD]**
 
-                    Reasoning ကို စာ 6 ကြောင်းဖြင့် ဖော်ပြပါ။
+                    Reasoning: (6 lines)
                     """
                     
                     raw_response = get_gemini_response_rotated(prompt)
                     
                     if "---SPLIT---" in raw_response:
                         res_parts = raw_response.split("---SPLIT---")
+                        # HTML wrapper
                         en_html = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{res_parts[0].strip()}</div>'
                         mm_html = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{res_parts[1].strip()}</div>'
                         
                         set_disk_cache(cache_key, f"{en_html}---SPLIT---{mm_html}", expiry_dt=expiry_dt_naive)
                         st.markdown(mm_html if lang == "Burmese" else en_html, unsafe_allow_html=True)
                     else:
+                        # Fail-safe: If AI fails to split, just show what it gave
                         st.markdown(f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{raw_response}</div>', unsafe_allow_html=True)
         else:
             st.error(f"⚠️ {d[lang]['no_match']}")
