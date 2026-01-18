@@ -254,11 +254,15 @@ if gen_click:
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # --- AI Prompt (Detailed Custom Form) ---
+                    # --- AI Prompt (Detailed Logic & Custom Form) ---
                     prompt = f"""
                     ROLE: Professional Football Analyst.
-                    TASK: Analyze {h_team} vs {a_team}.
-                    LANGUAGE: Respond strictly in {d[lang]['ai_lang']} language using Burmese characters.
+                    TASK: Analyze {h_team} (Home) vs {a_team} (Away).
+                    LANGUAGE: Respond strictly in {d[lang]['ai_lang']} language only. Use Burmese characters.
+
+                    IMPORTANT LOGIC RULE:
+                    Your prediction for "Goal Under/Over 2.5" MUST match your "Correct Score". 
+                    (Example: If score is 1-1 or 2-0, Goal MUST be Under 2.5. If score is 2-1 or 3-0, Goal MUST be Over 2.5).
 
                     OUTPUT FORMAT:
 
@@ -270,18 +274,17 @@ if gen_click:
                     **{a_team} Form**
                     (အဝေးကွင်း၏ နောက်ဆုံး 5 ပွဲ အခြေအနေကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ)
 
-                    **ထိပ်တိုက်တွေ့ဆုံမှု (H2H)**
+                    **ထိပ်တိုက်တွေ့ဆုံမှု**
                     (H2H နောက်ဆုံး 5 ပွဲ အခြေအနေကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ)
 
                     **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ**
                     (နှစ်သင်းကြား အိမ်ကွင်း အဝေးကွင်း ကွာခြားချက်ကို စာ 5 ကြောင်းခန့် သုံးသပ်ပါ)
 
-                    ---
                     ### **Summarize Table**
                     | **Category** | **Prediction** |
                     | :--- | :--- |
                     | **Winner Team** | [Team Name] |
-                    | **Correct Score** | [Result] |
+                    | **Correct Score** | [Score] |
                     | **Goal Under/Over** | [Result] |
                     | **Corners Under/Over** | [Result] |
                     | **Yellow Card Under/Over** | [Result] |
@@ -302,4 +305,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-        
+
