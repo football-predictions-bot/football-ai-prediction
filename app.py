@@ -201,7 +201,7 @@ if st.session_state.display_matches:
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# --- Helper: AI Key Rotation ---
+# --- Helper: AI Key Rotation (Debug Version) ---
 def get_gemini_response_rotated(prompt):
     # Gemini Key 3 ခုကို အလှည့်ကျ စမ်းသပ်ခြင်း
     ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
@@ -212,7 +212,9 @@ def get_gemini_response_rotated(prompt):
             # အစ်ကို မနေ့က သုံးခဲ့တဲ့ Model Name အမှန်သို့ ပြန်ပြင်ဆင်ထားပါသည်
             model = genai.GenerativeModel('gemini-flash-latest')
             return model.generate_content(prompt).text
-        except Exception:
+        except Exception as e:
+            # တကယ်တမ်း ဘာ Error တက်နေလဲဆိုတာကို သိနိုင်ဖို့ ထုတ်ပြခြင်း
+            st.error(f"API Error Detected: {e}")
             continue # Error တက်ရင် နောက် Key ကို ကူးမယ်
     return "⚠️ AI Service Busy. Please try again later."
 
@@ -297,4 +299,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-        
+
