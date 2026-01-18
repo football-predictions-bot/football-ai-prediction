@@ -209,8 +209,8 @@ def get_gemini_response_rotated(prompt):
     for key in ai_keys:
         try:
             genai.configure(api_key=key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            # 1.5 Flash is faster and supports the request well
+            # အစ်ကို မနေ့က သုံးခဲ့တဲ့ Model Name အမှန်သို့ ပြန်ပြင်ဆင်ထားပါသည်
+            model = genai.GenerativeModel('gemini-flash-latest')
             return model.generate_content(prompt).text
         except Exception:
             continue # Error တက်ရင် နောက် Key ကို ကူးမယ်
@@ -237,7 +237,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 if gen_click:
     if h_team and a_team and h_team not in ["Select Team", "No matches found"]:
-        # Find match object to get time
+        # Match Table ထဲမှ ပွဲစဉ်ကို ရှာဖွေခြင်း
         match_obj = next((m for m in st.session_state.display_matches if m['home'] == h_team and m['away'] == a_team), None)
         
         if match_obj:
@@ -247,39 +247,30 @@ if gen_click:
                 progress_bar.progress(percent_complete + 1)
                 
             with st.spinner('AI is analyzing stats & H2H...'):
-                # --- Cache Expiry Calculation ---
-                # ပွဲစပြီး ၁ နာရီအထိ Cache ထားမည်
+                # --- Cache Expiry Logic ---
+                # ပွဲစပြီး ၁ နာရီအထိ Disk ပေါ်တွင် သိမ်းထားမည်
                 match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ")
-                # Local Time တွက်ရန် (UTC+6:30 for Reference only, comparison uses system time usually but here we use offset)
-                # Simple Logic: Expiry = Current System Time + Remaining Time to (Match + 1 Hour)
-                # But easiest is: Expiry Date = Match Time + 1 Hour
-                expiry_dt = match_utc + datetime.timedelta(hours=1) # UTC Expiry
-                # Adjust to Server Timezone if needed, but simple comparison works if consistent
-                # To be safe, we use 'now' comparison in get_disk_cache with aware objects or naive consistent.
-                # Let's use simple naive for disk cache check logic provided in Part 1.
-                # We need to convert match_utc to system local time roughly or use logic. 
-                # Since get_disk_cache uses datetime.now(), we need expiry in same timezone.
-                # Let's rely on naive now() for simplicity as originally set up.
+                expiry_dt = match_utc + datetime.timedelta(hours=1)
                 expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
                 
-                # Check Disk Cache
+                # Check Disk Cache (၁၉ ရက်စာ စနစ်၏ အစိတ်အပိုင်း)
                 cache_key = f"pred_{h_team}_{a_team}_{today_mm}"
                 cached_result = get_disk_cache(cache_key)
 
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # --- AI Prompt Construction ---
+                    # --- AI Prompt Construction (Home/Away & Reasoning Focus) ---
                     prompt = f"""
                     ROLE: Expert Football Analyst.
                     TASK: Analyze {h_team} (Home) vs {a_team} (Away).
                     
                     CRITICAL ANALYSIS POINTS:
-                    1. **Home/Away Variance:** Analyze if {h_team} is specifically strong at Home. Analyze if {a_team} is weak specifically at Away games.
-                    2. **Head-to-Head (H2H):** Consider if one team is a 'bogey team' for the other based on history.
-                    3. **Form:** Recent 5 matches performance.
+                    1. **Home/Away Variance:** အိမ်ရှင် {h_team} သည် အိမ်ကွင်းတွင် အားကောင်းမှု ရှိမရှိ နှင့် ဧည့်သည် {a_team} သည် အဝေးကွင်းတွင် ဂိုးပေးရမှု များမများ သေချာသုံးသပ်ပါ။
+                    2. **Head-to-Head (H2H):** အစဉ်အလာအရ ဘယ်သူက အသာစီးရလဲ (Bogey Team ဟုတ်မဟုတ်) ထည့်သွင်းစဉ်းစားပါ။
+                    3. **Reasoning:** ခန့်မှန်းရခြင်း၏ အကျိုးအကြောင်းကို မတိုမရှည် ရှင်းပြပါ။
                     
-                    OUTPUT FORMAT (Strictly use Markdown with Colors/Bold):
+                    OUTPUT FORMAT (Markdown ကိုသုံး၍ အရောင်အသွေး စာလုံးအကြီးများဖြင့် ဖော်ပြပါ):
                     
                     # 🏆 WINNER: [Team Name] ([Probability %])
                     # ⚽ CORRECT SCORE: [Score]
@@ -288,17 +279,17 @@ if gen_click:
                     # 🟨 CARDS: [Over/Under]
                     
                     ## 📝 REASONING
-                    [Provide a concise explanation (approx 50 words). Explicitly mention the Home vs Away form factor and H2H data if relevant.]
+                    [အိမ်ကွင်း/အဝေးကွင်း ကွာခြားချက်နှင့် H2H အချက်အလက်များအပေါ် အခြေခံ၍ အကျိုးအကြောင်း ရှင်းလင်းချက်ကို ဤနေရာတွင် ရေးရန်။]
                     
                     Respond in {d[lang]['ai_lang']} language.
                     """
                     
                     response_text = get_gemini_response_rotated(prompt)
                     
-                    # Formatting Container
+                    # Formatting Result
                     final_output = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{response_text}</div>'
                     
-                    # Save to Cache (Expires 1 hour after match starts)
+                    # Save to Disk Cache
                     set_disk_cache(cache_key, final_output, expiry_dt=expiry_dt_naive)
                     
                     st.markdown(final_output, unsafe_allow_html=True)
@@ -306,4 +297,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-    
+        
