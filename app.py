@@ -3,8 +3,11 @@ import datetime
 import requests
 import google.generativeai as genai
 import time
+import json
+import os
+import dateutil.parser
 
-# UI အမှိုက်များ (Menu, Toolbar, Badge) ကို လုံးဝပျောက်သွားစေရန် configuration သတ်မှတ်ခြင်း
+# UI Configuration
 st.set_page_config(
     page_title="Football AI",
     layout="wide",
@@ -12,7 +15,32 @@ st.set_page_config(
     menu_items=None
 )
 
-# မြန်မာစံတော်ချိန် (UTC + 6:30) ကိုတွက်ချက်ခြင်း
+# --- Disk Caching System ---
+CACHE_DIR = "data_cache"
+if not os.path.exists(CACHE_DIR):
+    os.makedirs(CACHE_DIR)
+
+def get_disk_cache(key):
+    # Cache File ကို ဖတ်ပြီး Expiry မကျော်သေးရင် Data ပြန်ပေးသည်
+    file_path = os.path.join(CACHE_DIR, f"{key}.json")
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            cache_data = json.load(f)
+            expiry = datetime.datetime.fromisoformat(cache_data['expiry'])
+            if datetime.datetime.now() < expiry:
+                return cache_data['data']
+    return None
+
+def set_disk_cache(key, data, expiry_dt=None, days=19):
+    # Expiry အတိအကျမပေးရင် ၁၉ ရက်ထားမယ်
+    if expiry_dt is None:
+        expiry_dt = datetime.datetime.now() + datetime.timedelta(days=days)
+    
+    file_path = os.path.join(CACHE_DIR, f"{key}.json")
+    with open(file_path, "w") as f:
+        json.dump({'data': data, 'expiry': expiry_dt.isoformat()}, f)
+
+# Time Handling
 now_mm = datetime.datetime.utcnow() + datetime.timedelta(hours=6, minutes=30)
 today_mm = now_mm.date()
 
@@ -51,7 +79,6 @@ d = {
 }
 lang = st.session_state.lang
 
-# Football-Data.org League Codes & Mapping for Display
 league_codes = {
     "All Leagues": "ALL",
     "Premier League (England)": "PL",
@@ -62,7 +89,6 @@ league_codes = {
     "Ligue 1 (France)": "FL1"
 }
 
-# API Mapping
 league_name_map = {
     "Premier League": "Premier League (England)",
     "UEFA Champions League": "Champions League (Europe)",
@@ -137,8 +163,10 @@ if check_click:
                     t_str = mm_dt.strftime("%H:%M")
                     h_set.add(h)
                     a_set.add(a)
+                    # Saving utc string to re-parse later for cache expiry logic
                     st.session_state.display_matches.append({
-                        'time': t_str, 'home': h, 'away': a, 'league': l_display
+                        'time': t_str, 'home': h, 'away': a, 'league': l_display,
+                        'utc_str': m['utcDate']
                     })
                 st.session_state.h_teams = sorted(list(h_set))
                 st.session_state.a_teams = sorted(list(a_set))
@@ -148,7 +176,7 @@ if check_click:
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-# ပွဲစဉ်များကို Popularity အလိုက် Group လုပ်၍ပြသခြင်း
+# Display Matches
 if st.session_state.display_matches:
     grouped_matches = {}
     for match in st.session_state.display_matches:
@@ -159,7 +187,6 @@ if st.session_state.display_matches:
     for l_title in sorted_group_titles:
         matches_list = grouped_matches[l_title]
         st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
-        # ဤနေရာတွင် နံပါတ်စဉ်ကို ၁ မှ ပြန်စရန် enumerate သုံးထားပါသည်
         for idx, m in enumerate(matches_list, 1):
             st.markdown(f"""
                 <div class="match-row">
@@ -173,6 +200,21 @@ if st.session_state.display_matches:
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
+
+# --- Helper: AI Key Rotation ---
+def get_gemini_response_rotated(prompt):
+    # Gemini Key 3 ခုကို အလှည့်ကျ စမ်းသပ်ခြင်း
+    ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
+    
+    for key in ai_keys:
+        try:
+            genai.configure(api_key=key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            # 1.5 Flash is faster and supports the request well
+            return model.generate_content(prompt).text
+        except Exception:
+            continue # Error တက်ရင် နောက် Key ကို ကူးမယ်
+    return "⚠️ AI Service Busy. Please try again later."
 
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
@@ -195,27 +237,73 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 if gen_click:
     if h_team and a_team and h_team not in ["Select Team", "No matches found"]:
-        # Match Table ထဲမှာ ဒီပွဲရှိမရှိ စစ်ဆေးခြင်း
-        is_valid_match = any(m['home'] == h_team and m['away'] == a_team for m in st.session_state.display_matches)
+        # Find match object to get time
+        match_obj = next((m for m in st.session_state.display_matches if m['home'] == h_team and m['away'] == a_team), None)
         
-        if is_valid_match:
+        if match_obj:
             progress_bar = st.progress(0)
             for percent_complete in range(100):
                 time.sleep(0.01)
                 progress_bar.progress(percent_complete + 1)
                 
-            with st.spinner('AI is thinking...'):
-                try:
-                    genai.configure(api_key=st.secrets["gemini_keys"]["GEMINI_KEY_1"])
-                    model = genai.GenerativeModel('gemini-flash-latest') 
-                    prompt = f"Analyze {h_team} vs {a_team} in the league. Predict winner and score. Respond in {d[lang]['ai_lang']} language."
-                    response = model.generate_content(prompt)
-                    st.info(response.text)
-                except Exception as e:
-                    st.error(f"AI Error: {str(e)}")
+            with st.spinner('AI is analyzing stats & H2H...'):
+                # --- Cache Expiry Calculation ---
+                # ပွဲစပြီး ၁ နာရီအထိ Cache ထားမည်
+                match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ")
+                # Local Time တွက်ရန် (UTC+6:30 for Reference only, comparison uses system time usually but here we use offset)
+                # Simple Logic: Expiry = Current System Time + Remaining Time to (Match + 1 Hour)
+                # But easiest is: Expiry Date = Match Time + 1 Hour
+                expiry_dt = match_utc + datetime.timedelta(hours=1) # UTC Expiry
+                # Adjust to Server Timezone if needed, but simple comparison works if consistent
+                # To be safe, we use 'now' comparison in get_disk_cache with aware objects or naive consistent.
+                # Let's use simple naive for disk cache check logic provided in Part 1.
+                # We need to convert match_utc to system local time roughly or use logic. 
+                # Since get_disk_cache uses datetime.now(), we need expiry in same timezone.
+                # Let's rely on naive now() for simplicity as originally set up.
+                expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
+                
+                # Check Disk Cache
+                cache_key = f"pred_{h_team}_{a_team}_{today_mm}"
+                cached_result = get_disk_cache(cache_key)
+
+                if cached_result:
+                    st.markdown(cached_result, unsafe_allow_html=True)
+                else:
+                    # --- AI Prompt Construction ---
+                    prompt = f"""
+                    ROLE: Expert Football Analyst.
+                    TASK: Analyze {h_team} (Home) vs {a_team} (Away).
+                    
+                    CRITICAL ANALYSIS POINTS:
+                    1. **Home/Away Variance:** Analyze if {h_team} is specifically strong at Home. Analyze if {a_team} is weak specifically at Away games.
+                    2. **Head-to-Head (H2H):** Consider if one team is a 'bogey team' for the other based on history.
+                    3. **Form:** Recent 5 matches performance.
+                    
+                    OUTPUT FORMAT (Strictly use Markdown with Colors/Bold):
+                    
+                    # 🏆 WINNER: [Team Name] ([Probability %])
+                    # ⚽ CORRECT SCORE: [Score]
+                    # 🥅 GOALS: [Over/Under 2.5]
+                    # 🚩 CORNERS: [Over/Under]
+                    # 🟨 CARDS: [Over/Under]
+                    
+                    ## 📝 REASONING
+                    [Provide a concise explanation (approx 50 words). Explicitly mention the Home vs Away form factor and H2H data if relevant.]
+                    
+                    Respond in {d[lang]['ai_lang']} language.
+                    """
+                    
+                    response_text = get_gemini_response_rotated(prompt)
+                    
+                    # Formatting Container
+                    final_output = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{response_text}</div>'
+                    
+                    # Save to Cache (Expires 1 hour after match starts)
+                    set_disk_cache(cache_key, final_output, expiry_dt=expiry_dt_naive)
+                    
+                    st.markdown(final_output, unsafe_allow_html=True)
         else:
-            # ပွဲမရှိပါက Error ပေးခြင်း
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-                    
+    
