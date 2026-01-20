@@ -166,19 +166,21 @@ if check_click:
             if matches:
                 h_set, a_set = set(), set()
                 for m in matches:
-                    utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
-                    mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
-                    
-                    if d_from <= mm_dt.date() <= d_to:
-                        h, a = m['homeTeam']['name'], m['awayTeam']['name']
-                        l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
-                        t_str = mm_dt.strftime("%H:%M")
-                        h_set.add(h)
-                        a_set.add(a)
-                        st.session_state.display_matches.append({
-                            'time': t_str, 'home': h, 'away': a, 'league': l_display,
-                            'utc_str': m['utcDate']
-                        })
+                    # Filter: Only show Scheduled or Timed matches (No Finished, No In-Play)
+                    if m['status'] in ['SCHEDULED', 'TIMED']:
+                        utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
+                        mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
+                        
+                        if d_from <= mm_dt.date() <= d_to:
+                            h, a = m['homeTeam']['name'], m['awayTeam']['name']
+                            l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
+                            t_str = mm_dt.strftime("%H:%M")
+                            h_set.add(h)
+                            a_set.add(a)
+                            st.session_state.display_matches.append({
+                                'time': t_str, 'home': h, 'away': a, 'league': l_display,
+                                'utc_str': m['utcDate']
+                            })
                 st.session_state.h_teams = sorted(list(h_set)) if h_set else ["No matches found"]
                 st.session_state.a_teams = sorted(list(a_set)) if a_set else ["No matches found"]
             else:
@@ -187,7 +189,7 @@ if check_click:
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-# Display Matches (Updated for Red Warning Sign)
+# Display Matches
 if st.session_state.display_matches:
     grouped_matches = {}
     for match in st.session_state.display_matches:
@@ -218,6 +220,7 @@ elif st.session_state.check_performed:
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
+
 
 # --- Helper: AI Key Rotation ---
 def get_gemini_response_rotated(prompt):
@@ -327,4 +330,3 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-                
