@@ -255,13 +255,49 @@ elif st.session_state.check_performed:
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# --- Helper: AI Key Rotation (Updated for google-genai Client) ---
+# --- Helper: API-Sports Data Fetching ---
+def get_api_sports_stats(h_team, a_team, match_date):
+    api_key = st.secrets["api_keys"]["API_SPORTS_KEY"]
+    headers = {
+        'x-rapidapi-host': "v3.football.api-sports.io",
+        'x-rapidapi-key': api_key
+    }
+    
+    try:
+        # ၁။ Fixture ID ရှာဖွေခြင်း (Request 1)
+        search_url = f"https://v3.football.api-sports.io/fixtures?date={match_date}"
+        res = requests.get(search_url, headers=headers).json()
+        
+        fixture_id = None
+        for f in res.get('response', []):
+            # အသင်းနာမည် တစ်စိတ်တစ်ပိုင်း တူညီမှုကို စစ်ဆေးခြင်း
+            if (h_team.lower() in f['teams']['home']['name'].lower() or f['teams']['home']['name'].lower() in h_team.lower()):
+                fixture_id = f['fixture']['id']
+                break
+        
+        if not fixture_id:
+            return None
+
+        # ၂။ Predictions & Stats ယူခြင်း (Request 2)
+        pred_url = f"https://v3.football.api-sports.io/predictions?fixture={fixture_id}"
+        pred_res = requests.get(pred_url, headers=headers).json()
+        
+        # ၃။ Injuries ယူခြင်း (Request 3)
+        inj_url = f"https://v3.football.api-sports.io/injuries?fixture={fixture_id}"
+        inj_res = requests.get(inj_url, headers=headers).json()
+        
+        return {
+            'analysis': pred_res['response'][0] if pred_res.get('response') else None,
+            'injuries': inj_res.get('response', [])
+        }
+    except:
+        return None
+
+# --- Helper: AI Key Rotation ---
 def get_gemini_response_rotated(prompt):
     ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
-    
     for key in ai_keys:
         try:
-            # google-genai ရဲ့ Client ပုံစံဖြင့် ချိတ်ဆက်ခြင်း
             client = genai.Client(api_key=key)
             response = client.models.generate_content(
                 model='gemini-flash-latest',
@@ -269,20 +305,17 @@ def get_gemini_response_rotated(prompt):
                 config={'temperature': 0}
             )
             return response.text
-        except Exception:
+        except:
             continue 
     return "⚠️ AI Service Busy. Please try again later."
 
 # ၅။ Home vs Away Section
 c1, cvs, c2 = st.columns([2, 1, 2])
-
 with c1:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["home"]}</p>', unsafe_allow_html=True)
     h_team = st.selectbox("H", st.session_state.h_teams, key="h", label_visibility="collapsed")
-
 with cvs:
     st.markdown('<div style="display: flex; justify-content: center; align-items: center; height: 100%;"><div class="vs-ball">vs</div></div>', unsafe_allow_html=True)
-
 with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
     a_team = st.selectbox("A", st.session_state.a_teams, key="a", label_visibility="collapsed")
@@ -295,52 +328,55 @@ st.markdown('</div>', unsafe_allow_html=True)
 if gen_click:
     if h_team and a_team and h_team not in ["Select Team", "No matches found"]:
         match_obj = next((m for m in st.session_state.display_matches if m['home'] == h_team and m['away'] == a_team), None)
-        
         if match_obj:
             progress_bar = st.progress(0)
             for percent_complete in range(100):
                 time.sleep(0.01)
                 progress_bar.progress(percent_complete + 1)
                 
-            with st.spinner('AI is analyzing stats & H2H...'):
+            with st.spinner('AI is analyzing real-time stats & injuries...'):
                 match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
-                expiry_dt = match_utc + datetime.timedelta(hours=1)
-                # Warning ပျောက်ရန် utcnow အစား now(datetime.timezone.utc) သုံး၍ တွက်ချက်ခြင်း
-                expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.now(datetime.timezone.utc))
+                expiry_dt_naive = datetime.datetime.now() + (match_utc + datetime.timedelta(hours=1) - datetime.datetime.now(datetime.timezone.utc))
                 
-                cache_key = f"pred_fixed_mm_{h_team}_{a_team}_{today_mm}"
+                cache_key = f"pred_hybrid_v1_{h_team}_{a_team}_{today_mm}"
                 cached_result = get_disk_cache(cache_key)
 
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # --- AI Prompt ---
+                    # API-Sports မှ Data ဆွဲယူခြင်း
+                    real_data = get_api_sports_stats(h_team, a_team, today_mm.isoformat())
+                    
+                    # Context အဖြစ် ပြောင်းလဲခြင်း
+                    stats_context = "No real-time data available."
+                    if real_data and real_data['analysis']:
+                        comp = real_data['analysis']['comparison']
+                        h_form = real_data['analysis']['teams']['home']['league']['form']
+                        a_form = real_data['analysis']['teams']['away']['league']['form']
+                        injuries = ", ".join([i['player']['name'] for i in real_data['injuries']]) if real_data['injuries'] else "None"
+                        
+                        stats_context = f"""
+                        Real-time Data:
+                        - Comparison: Home Attack {comp['att']['home']}, Defense {comp['def']['home']} | Away Attack {comp['att']['away']}, Defense {comp['def']['away']}
+                        - Recent Form: {h_team} ({h_form}), {a_team} ({a_form})
+                        - Injuries: {injuries}
+                        - Prediction Advice: {real_data['analysis']['advice']}
+                        """
+
                     prompt = f"""
                     Analyze {h_team} (Home) vs {a_team} (Away).
+                    {stats_context}
+                    
                     Respond strictly in BURMESE language only using Unicode characters.
-
-                    IMPORTANT LOGIC RULE:
-                    Your prediction for "Goal Under/Over" MUST match your "Correct Score".
-                    (Example: If score is 1-1, Goal MUST be Under 2.5. If score is 3-0, Goal MUST be Over 2.5).
-
-                    Criteria for Best Pick: 
-                    From the 6 categories, select the ONE that is the SAFEST (Avoid Correct Score as best pick).
+                    IMPORTANT LOGIC RULE: Prediction for "Goal Under/Over" MUST match "Correct Score".
+                    Criteria for Best Pick: Select the ONE SAFEST category (Avoid Correct Score).
 
                     OUTPUT FORMAT:
-
                     # သုံးသပ်ချက်
-
-                    **{h_team} Form**
-                    အိမ်ကွင်း၏ နောက်ဆုံး 5 ပွဲအခြေအနေကို စာ 5 ကြောင်းခန့် မြန်မာလို သုံးသပ်ပါ။
-
-                    **{a_team} Form**
-                    အဝေးကွင်း၏ နောက်ဆုံး 5 ပွဲ အခြေအနေကို စာ 5 ကြောင်းခန့် မြန်မာလို သုံးသပ်ပါ။
-
-                    **ထိပ်တိုက်တွေ့ဆုံမှု**
-                    H2H နောက်ဆုံး 5 ပွဲ အခြေအနေကို စာ 5 ကြောင်းခန့် မြန်မာလို သုံးသပ်ပါ။
-
-                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ**
-                    နှစ်သင်းကြား အိမ်ကွင်း အဝေးကွင်း ကွာခြားချက်ကို စာ 5 ကြောင်းခန့် မြန်မာလို သုံးသပ်ပါ။
+                    **{h_team} Form** (စာ 5 ကြောင်း)
+                    **{a_team} Form** (စာ 5 ကြောင်း)
+                    **ထိပ်တိုက်တွေ့ဆုံမှု** (စာ 5 ကြောင်း)
+                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ** (စာ 5 ကြောင်း)
 
                     ### **Summarize Table**
                     | Category | Prediction |
@@ -353,13 +389,11 @@ if gen_click:
                     | Both Teams To Score yes/no | [Result] |
 
                     # **🏆 အဖြစ်နိုင်ဆုံးနှင့် အန္တရာယ်အကင်းဆုံးရွေးချယ်မှု: [ရလဒ်ကို ဤနေရာတွင် Bold ဖြင့်ပြပါ]**
-
-                    Reasoning: (ခန့်မှန်းချက်အတွက် အကျိုးအကြောင်းကို မြန်မာလို စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
+                    Reasoning: (စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
                     """
                     
                     response_text = get_gemini_response_rotated(prompt)
                     final_output = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{response_text}</div>'
-                    
                     set_disk_cache(cache_key, final_output, expiry_dt=expiry_dt_naive)
                     st.markdown(final_output, unsafe_allow_html=True)
         else:
