@@ -166,20 +166,21 @@ if check_click:
             if matches:
                 h_set, a_set = set(), set()
                 for m in matches:
-                    # Filter: Only show Scheduled or Timed matches (No Finished, No In-Play)
                     if m['status'] in ['SCHEDULED', 'TIMED']:
                         utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                         mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
                         
                         if d_from <= mm_dt.date() <= d_to:
                             h, a = m['homeTeam']['name'], m['awayTeam']['name']
+                            h_logo = m['homeTeam'].get('crest', '')
+                            a_logo = m['awayTeam'].get('crest', '')
                             l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
-                            t_str = mm_dt.strftime("%H:%M")
+                            dt_str = mm_dt.strftime("%d/%m %H:%M")
                             h_set.add(h)
                             a_set.add(a)
                             st.session_state.display_matches.append({
-                                'time': t_str, 'home': h, 'away': a, 'league': l_display,
-                                'utc_str': m['utcDate']
+                                'datetime': dt_str, 'home': h, 'away': a, 'league': l_display,
+                                'h_logo': h_logo, 'a_logo': a_logo, 'utc_str': m['utcDate']
                             })
                 st.session_state.h_teams = sorted(list(h_set)) if h_set else ["No matches found"]
                 st.session_state.a_teams = sorted(list(a_set)) if a_set else ["No matches found"]
@@ -202,12 +203,18 @@ if st.session_state.display_matches:
         st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
         for idx, m in enumerate(matches_list, 1):
             st.markdown(f"""
-                <div class="match-row">
+                <div class="match-row" style="height: auto; padding: 15px 10px;">
                     <div class="col-no">#{idx}</div>
-                    <div class="col-time">🕒 {m['time']}</div>
-                    <div class="col-team">{m['home']}</div>
+                    <div class="col-time" style="font-size: 11px;">📅 {m['datetime']}</div>
+                    <div class="col-team" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <img src="{m['h_logo']}" width="30" style="margin-bottom:5px;">
+                        <div>{m['home']}</div>
+                    </div>
                     <div class="col-vs">VS</div>
-                    <div class="col-team">{m['away']}</div>
+                    <div class="col-team" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <img src="{m['a_logo']}" width="30" style="margin-bottom:5px;">
+                        <div>{m['away']}</div>
+                    </div>
                 </div>
             """, unsafe_allow_html=True)
 elif st.session_state.check_performed:
@@ -220,7 +227,6 @@ elif st.session_state.check_performed:
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
-
 
 # --- Helper: AI Key Rotation ---
 def get_gemini_response_rotated(prompt):
@@ -330,3 +336,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
+
