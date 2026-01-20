@@ -55,6 +55,8 @@ if 'a_teams' not in st.session_state:
     st.session_state.a_teams = ["Select Team"]
 if 'display_matches' not in st.session_state:
     st.session_state.display_matches = []
+if 'check_performed' not in st.session_state:
+    st.session_state.check_performed = False
 
 def toggle_lang():
     st.session_state.lang = 'MM' if st.session_state.lang == 'EN' else 'EN'
@@ -67,7 +69,8 @@ d = {
         'trans_btn': 'မြန်မာဘာသာသို့ ပြောင်းရန်',
         'date_opts': ["Manual Date", "Within 24 Hours", "Within 48 Hours"],
         'ai_lang': 'English',
-        'no_match': 'No match found between these teams! Please check the Match Table.'
+        'no_match': 'No match found between these teams! Please check the Match Table.',
+        'no_fixture': 'No matches available for this date.'
     },
     'MM': {
         'title1': 'ပွဲကြိုခန့်မှန်းချက်များ', 'sel_league': 'လိဂ်ကို ရွေးချယ်ပါ', 'sel_date': 'ရက်စွဲကို ရွေးချယ်ပါ',
@@ -76,7 +79,8 @@ d = {
         'trans_btn': 'Switch to English',
         'date_opts': ["ရက်စွဲတပ်၍ရှာမည်", "၂၄ နာရီအတွင်း", "၄၈ နာရီအတွင်း"],
         'ai_lang': 'Burmese',
-        'no_match': 'ရွေးထားသော ပွဲစဉ်မရှိပါ။ Match Table ကို ပြန်စစ်ပါ။'
+        'no_match': 'ရွေးထားသော ပွဲစဉ်မရှိပါ။ Match Table ကို ပြန်စစ်ပါ။',
+        'no_fixture': 'ရွေးထားသော ရက်စွဲတွင် ပွဲစဉ်မရှိပါ။'
     }
 }
 lang = st.session_state.lang
@@ -127,6 +131,7 @@ check_click = st.button(d[lang]["btn_check"], key="check_btn", use_container_wid
 st.markdown('</div>', unsafe_allow_html=True)
 
 if check_click:
+    st.session_state.check_performed = True
     progress_bar = st.progress(0)
     for percent_complete in range(100):
         time.sleep(0.01)
@@ -142,7 +147,6 @@ if check_click:
             else:
                 d_from = d_to = sel_date
 
-            # Expanded Range for API call to handle timezone shifts
             d_from_api = d_from - datetime.timedelta(days=1)
             d_to_api = d_to + datetime.timedelta(days=1)
 
@@ -162,11 +166,9 @@ if check_click:
             if matches:
                 h_set, a_set = set(), set()
                 for m in matches:
-                    # Timezone Filtering Logic
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                     mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
                     
-                    # Only show matches that fall within the selected Myanmar date/range
                     if d_from <= mm_dt.date() <= d_to:
                         h, a = m['homeTeam']['name'], m['awayTeam']['name']
                         l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
@@ -185,7 +187,7 @@ if check_click:
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-# Display Matches
+# Display Matches (Updated for Red Warning Sign)
 if st.session_state.display_matches:
     grouped_matches = {}
     for match in st.session_state.display_matches:
@@ -206,6 +208,13 @@ if st.session_state.display_matches:
                     <div class="col-team">{m['away']}</div>
                 </div>
             """, unsafe_allow_html=True)
+elif st.session_state.check_performed:
+    st.markdown(f"""
+        <div style="background-color:rgba(255,0,0,0.1); padding:20px; border-radius:10px; border:1px solid #ff4b4b; text-align:center; margin:20px;">
+            <h3 style="color:#ff4b4b; margin:0;">⚠️ Warning</h3>
+            <p style="color:white; font-size:18px; margin-top:10px;">{d[lang]['no_fixture']}</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
@@ -260,7 +269,6 @@ if gen_click:
                 expiry_dt = match_utc + datetime.timedelta(hours=1)
                 expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
                 
-                # Cache key မှ lang ကို ဖြုတ်လိုက်ပါသည် (အမြဲတမ်း မြန်မာလိုပဲ သိမ်းမည်)
                 cache_key = f"pred_fixed_mm_{h_team}_{a_team}_{today_mm}"
                 cached_result = get_disk_cache(cache_key)
 
@@ -319,4 +327,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-            
+                
