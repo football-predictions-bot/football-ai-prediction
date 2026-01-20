@@ -267,7 +267,6 @@ def get_api_sports_stats(h_team, a_team, match_date):
         } for key in api_keys
     ]
     
-    # Key တစ်ခုချင်းစီကို ပတ်ပြီး အလုပ်လုပ်မလုပ် စမ်းသပ်ခြင်း (Route စနစ်)
     for headers in headers_list:
         try:
             # ၁။ Fixture ID ရှာဖွေခြင်း
@@ -275,14 +274,14 @@ def get_api_sports_stats(h_team, a_team, match_date):
             res = requests.get(search_url, headers=headers, timeout=10).json()
             
             fixture_id = None
-            if 'response' in res:
+            if 'response' in res and res['response']:
                 for f in res['response']:
                     if (h_team.lower() in f['teams']['home']['name'].lower() or f['teams']['home']['name'].lower() in h_team.lower()):
                         fixture_id = f['fixture']['id']
                         break
             
             if not fixture_id:
-                continue # ဒီ Key နဲ့ ရှာမရရင် နောက် Key တစ်ခု ထပ်စမ်းမယ်
+                continue 
 
             # ၂။ Predictions & Stats ယူခြင်း
             pred_url = f"https://v3.football.api-sports.io/predictions?fixture={fixture_id}"
@@ -297,7 +296,7 @@ def get_api_sports_stats(h_team, a_team, match_date):
                 'injuries': inj_res.get('response', [])
             }
         except:
-            continue # Error တက်ရင် နောက် Key တစ်ခုကို Route လုပ်မယ်
+            continue 
             
     return None
 
@@ -355,20 +354,26 @@ if gen_click:
                     # API-Sports မှ Data ကို Route စနစ်ဖြင့် ဆွဲယူခြင်း
                     real_data = get_api_sports_stats(h_team, a_team, today_mm.isoformat())
                     
-                    # Context အဖြစ် ပြောင်းလဲခြင်း
-                    stats_context = "No real-time data available."
-                    if real_data and real_data['analysis']:
-                        comp = real_data['analysis']['comparison']
-                        h_form = real_data['analysis']['teams']['home']['league']['form']
-                        a_form = real_data['analysis']['teams']['away']['league']['form']
-                        injuries = ", ".join([i['player']['name'] for i in real_data['injuries']]) if real_data['injuries'] else "None"
+                    # Context အဖြစ် ပြောင်းလဲခြင်း (Data မစုံရင် Error မတက်အောင် safe access လုပ်ထားသည်)
+                    stats_context = "No real-time data available from API."
+                    if real_data and real_data.get('analysis'):
+                        analysis_obj = real_data['analysis']
+                        comp = analysis_obj.get('comparison', {})
+                        teams_data = analysis_obj.get('teams', {})
+                        
+                        h_form = teams_data.get('home', {}).get('league', {}).get('form', 'N/A')
+                        a_form = teams_data.get('away', {}).get('league', {}).get('form', 'N/A')
+                        advice = analysis_obj.get('advice', 'No direct advice available')
+                        
+                        injuries_list = real_data.get('injuries', [])
+                        injuries = ", ".join([i['player']['name'] for i in injuries_list]) if injuries_list else "None reported"
                         
                         stats_context = f"""
                         Real-time Data (Source: API-Sports):
-                        - Comparison: Home Attack {comp['att']['home']}, Defense {comp['def']['home']} | Away Attack {comp['att']['away']}, Defense {comp['def']['away']}
+                        - Comparison: Home Attack {comp.get('att', {}).get('home', 'N/A')}, Defense {comp.get('def', {}).get('home', 'N/A')} | Away Attack {comp.get('att', {}).get('away', 'N/A')}, Defense {comp.get('def', {}).get('away', 'N/A')}
                         - Recent Form: {h_team} ({h_form}), {a_team} ({a_form})
                         - Injuries: {injuries}
-                        - Prediction Advice: {real_data['analysis']['advice']}
+                        - Prediction Advice: {advice}
                         """
 
                     prompt = f"""
