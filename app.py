@@ -346,7 +346,7 @@ def get_gemini_response_rotated(prompt):
         try:
             client = genai.Client(api_key=key)
             response = client.models.generate_content(
-                model='gemini-2.0-flash',
+                model='gemini-flash-latest',
                 contents=prompt,
                 config={'temperature': 0}
             )
