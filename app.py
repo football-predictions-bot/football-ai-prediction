@@ -16,7 +16,8 @@ st.set_page_config(
 )
 
 # --- Disk Caching System ---
-CACHE_DIR = "data_cache"
+# Streamlit Cloud Permission ရရန် /tmp directory သုံးထားသည်
+CACHE_DIR = "/tmp/data_cache"
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
 
@@ -139,54 +140,72 @@ if check_click:
     
     with st.spinner('Checking Matches...'):
         try:
-            token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
-            if date_option == d[lang]['date_opts'][1]:
-                d_from, d_to = today_mm, today_mm + datetime.timedelta(days=1)
-            elif date_option == d[lang]['date_opts'][2]:
-                d_from, d_to = today_mm, today_mm + datetime.timedelta(days=2)
-            else:
-                d_from = d_to = sel_date
-
-            d_from_api = d_from - datetime.timedelta(days=1)
-            d_to_api = d_to + datetime.timedelta(days=1)
-
             l_code = league_codes[league]
-            if l_code == "ALL":
-                target_codes = ",".join([v for k, v in league_codes.items() if v != "ALL"])
-                url = f"https://api.football-data.org/v4/matches?competitions={target_codes}&dateFrom={d_from_api}&dateTo={d_to_api}"
+            # --- Match Table Caching Logic ---
+            table_cache_key = f"table_v2_{l_code}_{sel_date}_{date_option}"
+            cached_table = get_disk_cache(table_cache_key)
+
+            if cached_table:
+                st.session_state.display_matches = cached_table['matches']
+                st.session_state.h_teams = cached_table['h_teams']
+                st.session_state.a_teams = cached_table['a_teams']
             else:
-                url = f"https://api.football-data.org/v4/competitions/{l_code}/matches?dateFrom={d_from_api}&dateTo={d_to_api}"
-            
-            headers = {'X-Auth-Token': token}
-            response = requests.get(url, headers=headers)
-            data = response.json()
-            matches = data.get('matches', [])
-            
-            st.session_state.display_matches = [] 
-            if matches:
-                h_set, a_set = set(), set()
-                for m in matches:
-                    if m['status'] in ['SCHEDULED', 'TIMED']:
-                        utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
-                        mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
-                        
-                        if d_from <= mm_dt.date() <= d_to:
-                            h, a = m['homeTeam']['name'], m['awayTeam']['name']
-                            h_logo = m['homeTeam'].get('crest', '')
-                            a_logo = m['awayTeam'].get('crest', '')
-                            l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
-                            dt_str = mm_dt.strftime("%d/%m %H:%M")
-                            h_set.add(h)
-                            a_set.add(a)
-                            st.session_state.display_matches.append({
-                                'datetime': dt_str, 'home': h, 'away': a, 'league': l_display,
-                                'h_logo': h_logo, 'a_logo': a_logo, 'utc_str': m['utcDate']
-                            })
-                st.session_state.h_teams = sorted(list(h_set)) if h_set else ["No matches found"]
-                st.session_state.a_teams = sorted(list(a_set)) if a_set else ["No matches found"]
-            else:
-                st.session_state.h_teams = ["No matches found"]
-                st.session_state.a_teams = ["No matches found"]
+                token = st.secrets["api_keys"]["FOOTBALL_DATA_KEY"]
+                if date_option == d[lang]['date_opts'][1]:
+                    d_from, d_to = today_mm, today_mm + datetime.timedelta(days=1)
+                elif date_option == d[lang]['date_opts'][2]:
+                    d_from, d_to = today_mm, today_mm + datetime.timedelta(days=2)
+                else:
+                    d_from = d_to = sel_date
+
+                d_from_api = d_from - datetime.timedelta(days=1)
+                d_to_api = d_to + datetime.timedelta(days=1)
+
+                if l_code == "ALL":
+                    target_codes = ",".join([v for k, v in league_codes.items() if v != "ALL"])
+                    url = f"https://api.football-data.org/v4/matches?competitions={target_codes}&dateFrom={d_from_api}&dateTo={d_to_api}"
+                else:
+                    url = f"https://api.football-data.org/v4/competitions/{l_code}/matches?dateFrom={d_from_api}&dateTo={d_to_api}"
+                
+                headers = {'X-Auth-Token': token}
+                response = requests.get(url, headers=headers)
+                data = response.json()
+                matches = data.get('matches', [])
+                
+                st.session_state.display_matches = [] 
+                if matches:
+                    h_set, a_set = set(), set()
+                    for m in matches:
+                        if m['status'] in ['SCHEDULED', 'TIMED']:
+                            utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
+                            mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
+                            
+                            if d_from <= mm_dt.date() <= d_to:
+                                h, a = m['homeTeam']['name'], m['awayTeam']['name']
+                                h_logo = m['homeTeam'].get('crest', '')
+                                a_logo = m['awayTeam'].get('crest', '')
+                                l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
+                                dt_str = mm_dt.strftime("%d/%m %H:%M")
+                                h_set.add(h)
+                                a_set.add(a)
+                                st.session_state.display_matches.append({
+                                    'datetime': dt_str, 'home': h, 'away': a, 'league': l_display,
+                                    'h_logo': h_logo, 'a_logo': a_logo, 'utc_str': m['utcDate']
+                                })
+                    
+                    st.session_state.h_teams = sorted(list(h_set)) if h_set else ["No matches found"]
+                    st.session_state.a_teams = sorted(list(a_set)) if a_set else ["No matches found"]
+                    
+                    # Table Cache သိမ်းဆည်းခြင်း (၅၉ မိနစ်)
+                    cache_expiry = datetime.datetime.now() + datetime.timedelta(minutes=59)
+                    set_disk_cache(table_cache_key, {
+                        'matches': st.session_state.display_matches,
+                        'h_teams': st.session_state.h_teams,
+                        'a_teams': st.session_state.a_teams
+                    }, expiry_dt=cache_expiry)
+                else:
+                    st.session_state.h_teams = ["No matches found"]
+                    st.session_state.a_teams = ["No matches found"]
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
@@ -227,6 +246,7 @@ elif st.session_state.check_performed:
 
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
+
 
 # --- Helper: AI Key Rotation ---
 def get_gemini_response_rotated(prompt):
