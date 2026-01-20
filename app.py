@@ -25,7 +25,9 @@ except Exception:
     CACHE_DIR = "/tmp"
 
 def get_disk_cache(key):
-    file_path = os.path.join(CACHE_DIR, f"{key}.json")
+    # အသင်းနာမည်ထဲက "/" များကို "_" ဖြင့် အစားထိုး၍ File Error ကို ကာကွယ်ခြင်း
+    safe_key = key.replace("/", "_")
+    file_path = os.path.join(CACHE_DIR, f"{safe_key}.json")
     if os.path.exists(file_path):
         try:
             with open(file_path, "r") as f:
@@ -41,7 +43,9 @@ def set_disk_cache(key, data, expiry_dt=None, days=19):
     if expiry_dt is None:
         expiry_dt = datetime.datetime.now() + datetime.timedelta(days=days)
     
-    file_path = os.path.join(CACHE_DIR, f"{key}.json")
+    # အသင်းနာမည်ထဲက "/" များကို "_" ဖြင့် အစားထိုး၍ File Error ကို ကာကွယ်ခြင်း
+    safe_key = key.replace("/", "_")
+    file_path = os.path.join(CACHE_DIR, f"{safe_key}.json")
     try:
         with open(file_path, "w") as f:
             json.dump({'data': data, 'expiry': expiry_dt.isoformat()}, f)
