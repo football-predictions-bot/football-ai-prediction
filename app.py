@@ -138,7 +138,8 @@ sel_date = st.date_input("D", value=today_mm, min_value=today_mm, label_visibili
 
 # ၃။ Check Matches Now
 st.markdown('<div class="check-btn-wrapper">', unsafe_allow_html=True)
-check_click = st.button(d[lang][], key="check_btn", use_container_width=True)
+# ပြင်ဆင်ချက်- d[lang][] နေရာတွင် d[lang]["btn_check"] ဟု ဖြည့်စွက်ထားသည်
+check_click = st.button(d[lang]["btn_check"], key="check_btn", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 if check_click:
@@ -202,8 +203,8 @@ if check_click:
                                     'h_logo': h_logo, 'a_logo': a_logo, 'utc_str': m['utcDate']
                                 })
                     
-                    st.session_state.h_teams = sorted(list(h_set)) if h_set else ["No matches found"]
-                    st.session_state.a_teams = sorted(list(a_set)) if a_set else ["No matches found"]
+                    st.session_state.h_teams = ["Select Team"] + sorted(list(h_set)) if h_set else ["No matches found"]
+                    st.session_state.a_teams = ["Select Team"] + sorted(list(a_set)) if a_set else ["No matches found"]
                     
                     cache_expiry = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=59)
                     set_disk_cache(table_cache_key, {
@@ -217,16 +218,13 @@ if check_click:
         except Exception as e:
             st.error(f"Error: {str(e)}")
 
-# Display Matches
+# Display Matches Table
 if st.session_state.display_matches:
     grouped_matches = {}
     for match in st.session_state.display_matches:
         grouped_matches.setdefault(match['league'], []).append(match)
     
-    sorted_group_titles = [k for k in league_codes.keys() if k in grouped_matches]
-    
-    for l_title in sorted_group_titles:
-        matches_list = grouped_matches[l_title]
+    for l_title, matches_list in grouped_matches.items():
         st.markdown(f'<div style="color:#FFD700; font-weight:bold; margin: 15px 0 5px 15px; border-bottom: 1px solid #333;">🏆 {l_title}</div>', unsafe_allow_html=True)
         for idx, m in enumerate(matches_list, 1):
             st.markdown(f"""
@@ -285,7 +283,6 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
 
             # ၂။ Standings (Current League + Major League Check)
             standings_data = ""
-            # Current Match League Standing
             s_res = requests.get(f"https://v3.football.api-sports.io/standings?league={league_id}&season={season}", headers=headers, timeout=10).json()
             if s_res.get('response'):
                 for rank in s_res['response'][0]['league']['standings'][0]:
@@ -309,6 +306,7 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
             
             h_last_fid = h_l10['response'][0]['fixture']['id'] if h_l10.get('response') else None
             a_last_fid = a_l10['response'][0]['fixture']['id'] if a_l10.get('response') else None
+            
             h_rate = requests.get(f"https://v3.football.api-sports.io/fixtures/players?fixture={h_last_fid}&team={h_real_id}", headers=headers, timeout=10).json() if h_last_fid else {}
             a_rate = requests.get(f"https://v3.football.api-sports.io/fixtures/players?fixture={a_last_fid}&team={a_real_id}", headers=headers, timeout=10).json() if a_last_fid else {}
             
@@ -338,7 +336,7 @@ def get_gemini_response_rotated(prompt):
         try:
             client = genai.Client(api_key=key)
             response = client.models.generate_content(
-                model='gemini-flash-latest',
+                model='gemini-2.0-flash',
                 contents=prompt,
                 config={'temperature': 0}
             )
@@ -386,8 +384,8 @@ if gen_click:
                         h_id, a_id = real_data['h_id'], real_data['a_id']
                         injury_list = [f"{i['player']['name']} ({i['player']['reason']})" for i in real_data.get('injuries', [])]
                         
-                        h_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['h_ratings'][0].get('players', []) if p['statistics'][0]['games']['rating'] and float(p['statistics'][0]['games']['rating']) > 7.0] if real_data['h_ratings'] else []
-                        a_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['a_ratings'][0].get('players', []) if p['statistics'][0]['games']['rating'] and float(p['statistics'][0]['games']['rating']) > 7.0] if real_data['a_ratings'] else []
+                        h_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['h_ratings'] if p.get('statistics') and p['statistics'][0].get('games') and p['statistics'][0]['games'].get('rating') and float(p['statistics'][0]['games']['rating']) > 7.0] if real_data['h_ratings'] else []
+                        a_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['a_ratings'] if p.get('statistics') and p['statistics'][0].get('games') and p['statistics'][0]['games'].get('rating') and float(p['statistics'][0]['games']['rating']) > 7.0] if real_data['a_ratings'] else []
 
                         h_n, a_n = (real_data['h_schedule'][0] if real_data['h_schedule'] else None), (real_data['a_schedule'][0] if real_data['a_schedule'] else None)
                         h_next = f"[{h_n['league']['name']}] vs {h_n['teams']['away']['name'] if h_n['teams']['home']['id']==h_id else h_n['teams']['home']['name']}" if h_n else "N/A"
@@ -440,4 +438,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-
+        
