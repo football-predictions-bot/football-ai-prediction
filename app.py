@@ -255,43 +255,51 @@ elif st.session_state.check_performed:
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# --- Helper: API-Sports Data Fetching ---
+# --- Helper: API-Sports Data Fetching with Route (Key Rotation) ---
 def get_api_sports_stats(h_team, a_team, match_date):
-    api_key = st.secrets["api_keys"]["API_SPORTS_KEY"]
-    headers = {
-        'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': api_key
-    }
+    # APISPORTS Key ၄ ခုကို Route လုပ်ရန် စာရင်းပြုစုခြင်း
+    api_keys = [st.secrets["api_keys"][f"APISPORTS_KEY_{i}"] for i in range(1, 5)]
     
-    try:
-        # ၁။ Fixture ID ရှာဖွေခြင်း (Request 1)
-        search_url = f"https://v3.football.api-sports.io/fixtures?date={match_date}"
-        res = requests.get(search_url, headers=headers).json()
-        
-        fixture_id = None
-        for f in res.get('response', []):
-            # အသင်းနာမည် တစ်စိတ်တစ်ပိုင်း တူညီမှုကို စစ်ဆေးခြင်း
-            if (h_team.lower() in f['teams']['home']['name'].lower() or f['teams']['home']['name'].lower() in h_team.lower()):
-                fixture_id = f['fixture']['id']
-                break
-        
-        if not fixture_id:
-            return None
+    headers_list = [
+        {
+            'x-rapidapi-host': "v3.football.api-sports.io",
+            'x-rapidapi-key': key
+        } for key in api_keys
+    ]
+    
+    # Key တစ်ခုချင်းစီကို ပတ်ပြီး အလုပ်လုပ်မလုပ် စမ်းသပ်ခြင်း (Route စနစ်)
+    for headers in headers_list:
+        try:
+            # ၁။ Fixture ID ရှာဖွေခြင်း
+            search_url = f"https://v3.football.api-sports.io/fixtures?date={match_date}"
+            res = requests.get(search_url, headers=headers, timeout=10).json()
+            
+            fixture_id = None
+            if 'response' in res:
+                for f in res['response']:
+                    if (h_team.lower() in f['teams']['home']['name'].lower() or f['teams']['home']['name'].lower() in h_team.lower()):
+                        fixture_id = f['fixture']['id']
+                        break
+            
+            if not fixture_id:
+                continue # ဒီ Key နဲ့ ရှာမရရင် နောက် Key တစ်ခု ထပ်စမ်းမယ်
 
-        # ၂။ Predictions & Stats ယူခြင်း (Request 2)
-        pred_url = f"https://v3.football.api-sports.io/predictions?fixture={fixture_id}"
-        pred_res = requests.get(pred_url, headers=headers).json()
-        
-        # ၃။ Injuries ယူခြင်း (Request 3)
-        inj_url = f"https://v3.football.api-sports.io/injuries?fixture={fixture_id}"
-        inj_res = requests.get(inj_url, headers=headers).json()
-        
-        return {
-            'analysis': pred_res['response'][0] if pred_res.get('response') else None,
-            'injuries': inj_res.get('response', [])
-        }
-    except:
-        return None
+            # ၂။ Predictions & Stats ယူခြင်း
+            pred_url = f"https://v3.football.api-sports.io/predictions?fixture={fixture_id}"
+            pred_res = requests.get(pred_url, headers=headers, timeout=10).json()
+            
+            # ၃။ Injuries ယူခြင်း
+            inj_url = f"https://v3.football.api-sports.io/injuries?fixture={fixture_id}"
+            inj_res = requests.get(inj_url, headers=headers, timeout=10).json()
+            
+            return {
+                'analysis': pred_res['response'][0] if pred_res.get('response') else None,
+                'injuries': inj_res.get('response', [])
+            }
+        except:
+            continue # Error တက်ရင် နောက် Key တစ်ခုကို Route လုပ်မယ်
+            
+    return None
 
 # --- Helper: AI Key Rotation ---
 def get_gemini_response_rotated(prompt):
@@ -338,13 +346,13 @@ if gen_click:
                 match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
                 expiry_dt_naive = datetime.datetime.now() + (match_utc + datetime.timedelta(hours=1) - datetime.datetime.now(datetime.timezone.utc))
                 
-                cache_key = f"pred_hybrid_v1_{h_team}_{a_team}_{today_mm}"
+                cache_key = f"pred_hybrid_v2_{h_team}_{a_team}_{today_mm}"
                 cached_result = get_disk_cache(cache_key)
 
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # API-Sports မှ Data ဆွဲယူခြင်း
+                    # API-Sports မှ Data ကို Route စနစ်ဖြင့် ဆွဲယူခြင်း
                     real_data = get_api_sports_stats(h_team, a_team, today_mm.isoformat())
                     
                     # Context အဖြစ် ပြောင်းလဲခြင်း
@@ -356,7 +364,7 @@ if gen_click:
                         injuries = ", ".join([i['player']['name'] for i in real_data['injuries']]) if real_data['injuries'] else "None"
                         
                         stats_context = f"""
-                        Real-time Data:
+                        Real-time Data (Source: API-Sports):
                         - Comparison: Home Attack {comp['att']['home']}, Defense {comp['def']['home']} | Away Attack {comp['att']['away']}, Defense {comp['def']['away']}
                         - Recent Form: {h_team} ({h_form}), {a_team} ({a_form})
                         - Injuries: {injuries}
@@ -373,10 +381,10 @@ if gen_click:
 
                     OUTPUT FORMAT:
                     # သုံးသပ်ချက်
-                    **{h_team} Form** (စာ 5 ကြောင်း)
-                    **{a_team} Form** (စာ 5 ကြောင်း)
-                    **ထိပ်တိုက်တွေ့ဆုံမှု** (စာ 5 ကြောင်း)
-                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ** (စာ 5 ကြောင်း)
+                    **{h_team} Form** (စာ 5 ကြောင်းခန့်)
+                    **{a_team} Form** (စာ 5 ကြောင်းခန့်)
+                    **ထိပ်တိုက်တွေ့ဆုံမှု** (စာ 5 ကြောင်းခန့်)
+                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ** (စာ 5 ကြောင်းခန့်)
 
                     ### **Summarize Table**
                     | Category | Prediction |
@@ -389,7 +397,7 @@ if gen_click:
                     | Both Teams To Score yes/no | [Result] |
 
                     # **🏆 အဖြစ်နိုင်ဆုံးနှင့် အန္တရာယ်အကင်းဆုံးရွေးချယ်မှု: [ရလဒ်ကို ဤနေရာတွင် Bold ဖြင့်ပြပါ]**
-                    Reasoning: (စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
+                    Reasoning: (ခန့်မှန်းချက်အတွက် အကျိုးအကြောင်းကို မြန်မာလို စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
                     """
                     
                     response_text = get_gemini_response_rotated(prompt)
@@ -400,4 +408,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-        
+
