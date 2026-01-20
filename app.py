@@ -263,6 +263,9 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
     
     for headers in headers_list:
         try:
+            # အကောင့်များ Spam ဖြစ်ပြီး အပိတ်မခံရစေရန် ၂ စက္ကန့် ခြားခြင်း
+            time.sleep(2)
+            
             # ၁။ Fixture ID နှင့် Team ID အစစ်အမှန်များကို ရှာဖွေခြင်း
             search_url = f"https://v3.football.api-sports.io/fixtures?date={match_date}"
             res = requests.get(search_url, headers=headers, timeout=15).json()
@@ -296,6 +299,8 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
 
             if any(x in fixture_obj['league']['name'] for x in ["Champions League", "Europa League"]):
                 for m_name, m_id in MAJOR_LEAGUE_IDS.items():
+                    # Request တစ်ခုချင်းစီကြား ခေတ္တနားခြင်း
+                    time.sleep(1)
                     m_res = requests.get(f"https://v3.football.api-sports.io/standings?league={m_id}&season={season}", headers=headers, timeout=10).json()
                     if m_res.get('response'):
                         for rank in m_res['response'][0]['league']['standings'][0]:
@@ -303,6 +308,7 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
                                 standings_data += f"[Domestic {m_name}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
 
             # ၃။ Predictions, Injuries, Last 10, Ratings, Next Match
+            time.sleep(1)
             pred_res = requests.get(f"https://v3.football.api-sports.io/predictions?fixture={f_id}", headers=headers, timeout=10).json()
             inj_res = requests.get(f"https://v3.football.api-sports.io/injuries?fixture={f_id}", headers=headers, timeout=10).json()
             h_l10 = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_real_id}&last=10&status=FT", headers=headers, timeout=10).json()
