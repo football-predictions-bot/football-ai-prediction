@@ -31,7 +31,7 @@ def get_disk_cache(key):
             with open(file_path, "r") as f:
                 cache_data = json.load(f)
                 expiry = datetime.datetime.fromisoformat(cache_data['expiry'])
-                # Warning ပျောက်ရန် timezone-aware conversion သုံးထားသည်
+                # Timezone-aware object သုံး၍ နှိုင်းယှဉ်ခြင်း
                 if datetime.datetime.now(datetime.timezone.utc) < expiry.replace(tzinfo=datetime.timezone.utc):
                     return cache_data['data']
         except:
@@ -50,7 +50,7 @@ def set_disk_cache(key, data, expiry_dt=None, days=19):
     except Exception as e:
         st.sidebar.error(f"Cache Error: {str(e)}")
 
-# Time Handling (Warning ပျောက်ရန် utcnow အစား now(datetime.timezone.utc) သုံးခြင်း)
+# Time Handling (Warning ပျောက်ရန် utcnow အစား timezone-aware object သုံးခြင်း)
 now_mm = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=6, minutes=30)
 today_mm = now_mm.date()
 yesterday_mm = today_mm - datetime.timedelta(days=1)
@@ -151,7 +151,6 @@ if check_click:
     with st.spinner('Checking Matches...'):
         try:
             l_code = league_codes[league]
-            # --- Match Table Caching Logic ---
             table_cache_key = f"table_v2_{l_code}_{sel_date}_{date_option}"
             cached_table = get_disk_cache(table_cache_key)
 
@@ -206,7 +205,6 @@ if check_click:
                     st.session_state.h_teams = sorted(list(h_set)) if h_set else ["No matches found"]
                     st.session_state.a_teams = sorted(list(a_set)) if a_set else ["No matches found"]
                     
-                    # Table Cache သိမ်းဆည်းခြင်း (၅၉ မိနစ်)
                     cache_expiry = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=59)
                     set_disk_cache(table_cache_key, {
                         'matches': st.session_state.display_matches,
@@ -257,17 +255,18 @@ elif st.session_state.check_performed:
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-# --- Helper: AI Key Rotation (Updated for google-genai) ---
+# --- Helper: AI Key Rotation (Updated for google-genai Client) ---
 def get_gemini_response_rotated(prompt):
     ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
     
     for key in ai_keys:
         try:
-            # New GenAI Client Library approach
+            # google-genai ရဲ့ Client ပုံစံဖြင့် ချိတ်ဆက်ခြင်း
             client = genai.Client(api_key=key)
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
-                contents=prompt
+                model='gemini-flash-latest',
+                contents=prompt,
+                config={'temperature': 0}
             )
             return response.text
         except Exception:
@@ -306,7 +305,7 @@ if gen_click:
             with st.spinner('AI is analyzing stats & H2H...'):
                 match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
                 expiry_dt = match_utc + datetime.timedelta(hours=1)
-                # Warning ပျောက်ရန် utcnow အစား timezone-aware object ကို သုံး၍ တွက်ချက်ခြင်း
+                # Warning ပျောက်ရန် utcnow အစား now(datetime.timezone.utc) သုံး၍ တွက်ချက်ခြင်း
                 expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.now(datetime.timezone.utc))
                 
                 cache_key = f"pred_fixed_mm_{h_team}_{a_team}_{today_mm}"
@@ -315,7 +314,7 @@ if gen_click:
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # --- AI Prompt (Strictly Burmese Only) ---
+                    # --- AI Prompt ---
                     prompt = f"""
                     Analyze {h_team} (Home) vs {a_team} (Away).
                     Respond strictly in BURMESE language only using Unicode characters.
