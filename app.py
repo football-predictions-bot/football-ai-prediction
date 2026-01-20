@@ -256,16 +256,9 @@ elif st.session_state.check_performed:
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
 # --- Helper: API-Sports Data Fetching with Route (Key Rotation) ---
-def get_api_sports_stats(h_team, a_team, match_date):
-    # APISPORTS Key ၄ ခုကို Route လုပ်ရန် စာရင်းပြုစုခြင်း
+def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
     api_keys = [st.secrets["api_keys"][f"APISPORTS_KEY_{i}"] for i in range(1, 5)]
-    
-    headers_list = [
-        {
-            'x-rapidapi-host': "v3.football.api-sports.io",
-            'x-rapidapi-key': key
-        } for key in api_keys
-    ]
+    headers_list = [{'x-rapidapi-host': "v3.football.api-sports.io", 'x-rapidapi-key': key} for key in api_keys]
     
     for headers in headers_list:
         try:
@@ -273,31 +266,42 @@ def get_api_sports_stats(h_team, a_team, match_date):
             search_url = f"https://v3.football.api-sports.io/fixtures?date={match_date}"
             res = requests.get(search_url, headers=headers, timeout=10).json()
             
-            fixture_id = None
+            fixture_obj = None
             if 'response' in res and res['response']:
                 for f in res['response']:
                     if (h_team.lower() in f['teams']['home']['name'].lower() or f['teams']['home']['name'].lower() in h_team.lower()):
-                        fixture_id = f['fixture']['id']
+                        fixture_obj = f
                         break
             
-            if not fixture_id:
-                continue 
+            if not fixture_obj: continue 
+            f_id = fixture_obj['fixture']['id']
+            h_team_id = fixture_obj['teams']['home']['id']
+            a_team_id = fixture_obj['teams']['away']['id']
 
-            # ၂။ Predictions & Stats ယူခြင်း
-            pred_url = f"https://v3.football.api-sports.io/predictions?fixture={fixture_id}"
-            pred_res = requests.get(pred_url, headers=headers, timeout=10).json()
+            # ၂။ Predictions & Stats
+            pred_res = requests.get(f"https://v3.football.api-sports.io/predictions?fixture={f_id}", headers=headers, timeout=10).json()
             
-            # ၃။ Injuries ယူခြင်း
-            inj_url = f"https://v3.football.api-sports.io/injuries?fixture={fixture_id}"
-            inj_res = requests.get(inj_url, headers=headers, timeout=10).json()
-            
+            # ၃။ Injuries
+            inj_res = requests.get(f"https://v3.football.api-sports.io/injuries?fixture={f_id}", headers=headers, timeout=10).json()
+
+            # ၄။ Player Ratings & Stats (Last 5 Matches)
+            h_last_stats = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_team_id}&last=5&status=FT", headers=headers, timeout=10).json()
+            a_last_stats = requests.get(f"https://v3.football.api-sports.io/fixtures?team={a_team_id}&last=5&status=FT", headers=headers, timeout=10).json()
+
+            # ၅။ Fixture Schedule (Next matches to check congestion)
+            h_next = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_team_id}&next=2", headers=headers, timeout=10).json()
+            a_next = requests.get(f"https://v3.football.api-sports.io/fixtures?team={a_team_id}&next=2", headers=headers, timeout=10).json()
+
             return {
-                'analysis': pred_res['response'][0] if pred_res.get('response') else None,
-                'injuries': inj_res.get('response', [])
+                'analysis': pred_res.get('response', [None])[0],
+                'injuries': inj_res.get('response', []),
+                'h_last_5': h_last_stats.get('response', []),
+                'a_last_5': a_last_stats.get('response', []),
+                'h_schedule': h_next.get('response', []),
+                'a_schedule': a_next.get('response', [])
             }
         except:
             continue 
-            
     return None
 
 # --- Helper: AI Key Rotation ---
@@ -341,55 +345,68 @@ if gen_click:
                 time.sleep(0.01)
                 progress_bar.progress(percent_complete + 1)
                 
-            with st.spinner('AI is analyzing real-time stats & injuries...'):
+            with st.spinner('AI is analyzing stats, player ratings & match congestion...'):
                 match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
                 expiry_dt_naive = datetime.datetime.now() + (match_utc + datetime.timedelta(hours=1) - datetime.datetime.now(datetime.timezone.utc))
                 
-                cache_key = f"pred_hybrid_v2_{h_team}_{a_team}_{today_mm}"
+                cache_key = f"pred_hybrid_v5_last5_{h_team}_{a_team}_{today_mm}"
                 cached_result = get_disk_cache(cache_key)
 
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
-                    # API-Sports မှ Data ကို Route စနစ်ဖြင့် ဆွဲယူခြင်း
                     real_data = get_api_sports_stats(h_team, a_team, today_mm.isoformat())
                     
-                    # Context အဖြစ် ပြောင်းလဲခြင်း (Data မစုံရင် Error မတက်အောင် safe access လုပ်ထားသည်)
-                    stats_context = "No real-time data available from API."
-                    if real_data and real_data.get('analysis'):
-                        analysis_obj = real_data['analysis']
-                        comp = analysis_obj.get('comparison', {})
-                        teams_data = analysis_obj.get('teams', {})
+                    stats_context = "No detailed real-time data available."
+                    if real_data:
+                        analysis = real_data.get('analysis', {})
+                        comp = analysis.get('comparison', {})
+                        advice = analysis.get('advice', 'No direct advice')
                         
-                        h_form = teams_data.get('home', {}).get('league', {}).get('form', 'N/A')
-                        a_form = teams_data.get('away', {}).get('league', {}).get('form', 'N/A')
-                        advice = analysis_obj.get('advice', 'No direct advice available')
+                        # Formatting Last 5 Matches
+                        h_last_5_results = []
+                        for m in real_data.get('h_last_5', []):
+                            res = f"{m.get('teams',{}).get('home',{}).get('name')} {m.get('goals',{}).get('home')}-{m.get('goals',{}).get('away')} {m.get('teams',{}).get('away',{}).get('name')}"
+                            h_last_5_results.append(res)
                         
-                        injuries_list = real_data.get('injuries', [])
-                        injuries = ", ".join([i['player']['name'] for i in injuries_list]) if injuries_list else "None reported"
+                        a_last_5_results = []
+                        for m in real_data.get('a_last_5', []):
+                            res = f"{m.get('teams',{}).get('home',{}).get('name')} {m.get('goals',{}).get('home')}-{m.get('goals',{}).get('away')} {m.get('teams',{}).get('away',{}).get('name')}"
+                            a_last_5_results.append(res)
+
+                        h_next_game = real_data['h_schedule'][0].get('fixture', {}).get('date', 'N/A') if real_data.get('h_schedule') else "N/A"
+                        a_next_game = real_data['a_schedule'][0].get('fixture', {}).get('date', 'N/A') if real_data.get('a_schedule') else "N/A"
                         
+                        inj_list = [i.get('player', {}).get('name', 'Unknown') for i in real_data.get('injuries', [])]
+
                         stats_context = f"""
-                        Real-time Data (Source: API-Sports):
-                        - Comparison: Home Attack {comp.get('att', {}).get('home', 'N/A')}, Defense {comp.get('def', {}).get('home', 'N/A')} | Away Attack {comp.get('att', {}).get('away', 'N/A')}, Defense {comp.get('def', {}).get('away', 'N/A')}
-                        - Recent Form: {h_team} ({h_form}), {a_team} ({a_form})
-                        - Injuries: {injuries}
-                        - Prediction Advice: {advice}
+                        CURRENT DATA (DATE: {datetime.date.today()}):
+                        - {h_team} Last 5 Matches: {', '.join(h_last_5_results)}
+                        - {a_team} Last 5 Matches: {', '.join(a_last_5_results)}
+                        - Next Match: {h_team}: {h_next_game} | {a_team}: {a_next_game}
+                        - Comparison: Home Att {comp.get('att', {}).get('home')}, Def {comp.get('def', {}).get('home')} | Away Att {comp.get('att', {}).get('away')}, Def {comp.get('def', {}).get('away')}
+                        - Injuries: {', '.join(inj_list) if inj_list else 'None'}
+                        - API Advice: {advice}
                         """
 
                     prompt = f"""
-                    Analyze {h_team} (Home) vs {a_team} (Away).
+                    SYSTEM INSTRUCTION: You are a professional football analyst in 2026. 
+                    IGNORE all your pre-training memory about team coaches, squads, or player locations. 
+                    STRICTLY use the provided CURRENT DATA. 
+                    
                     {stats_context}
                     
-                    Respond strictly in BURMESE language only using Unicode characters.
-                    IMPORTANT LOGIC RULE: Prediction for "Goal Under/Over" MUST match "Correct Score".
-                    Criteria for Best Pick: Select the ONE SAFEST category (Avoid Correct Score).
+                    Analyze {h_team} vs {a_team}. 
+                    Consider "Match Congestion" (Rest days) and "Squad Rotation" if the next match is a major tournament or very close.
+                    Identify if a team is in a "Goal Drought" (last 5 matches) or "Poor Form".
+                    Respond strictly in BURMESE language (Unicode).
 
                     OUTPUT FORMAT:
                     # သုံးသပ်ချက်
-                    **{h_team} Form** (စာ 5 ကြောင်းခန့်)
-                    **{a_team} Form** (စာ 5 ကြောင်းခန့်)
-                    **ထိပ်တိုက်တွေ့ဆုံမှု** (စာ 5 ကြောင်းခန့်)
-                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ** (စာ 5 ကြောင်းခန့်)
+                    **{h_team} Form & Squad Analysis** (နောက်ဆုံး ၅ ပွဲရလဒ်နှင့် ခြေစွမ်းကိုအခြေခံ၍ ၅ ကြောင်း)
+                    **{a_team} Form & Squad Analysis** (နောက်ဆုံး ၅ ပွဲရလဒ်နှင့် ခြေစွမ်းကိုအခြေခံ၍ ၅ ကြောင်း)
+                    **ပွဲပန်းမှုနှင့် လူချန်နိုင်မှု** (နောက်ပွဲရက်စွဲနှင့် အရေးကြီးပုံကိုကြည့်၍ ၅ ကြောင်း)
+                    **အိမ်ကွင်း/အဝေးကွင်း အခြေအနေ** (၅ ကြောင်း)
 
                     ### **Summarize Table**
                     | Category | Prediction |
@@ -401,8 +418,8 @@ if gen_click:
                     | Yellow Card under/over | [Result] |
                     | Both Teams To Score yes/no | [Result] |
 
-                    # **🏆 အဖြစ်နိုင်ဆုံးနှင့် အန္တရာယ်အကင်းဆုံးရွေးချယ်မှု: [ရလဒ်ကို ဤနေရာတွင် Bold ဖြင့်ပြပါ]**
-                    Reasoning: (ခန့်မှန်းချက်အတွက် အကျိုးအကြောင်းကို မြန်မာလို စာ 6 ကြောင်း အတိအကျဖြင့် ဖော်ပြပါ)
+                    # **🏆 အဖြစ်နိုင်ဆုံးနှင့် အန္တရာယ်အကင်းဆုံးရွေးချယ်မှု: [ရလဒ်ကို Bold ဖြင့်ပြပါ]**
+                    Reasoning: (နောက်ဆုံး ၅ ပွဲ၏ Statistics နှင့် ပွဲပန်းမှုကို အခြေခံ၍ ၆ ကြောင်း အတိအကျဖြေပါ)
                     """
                     
                     response_text = get_gemini_response_rotated(prompt)
