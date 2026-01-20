@@ -258,11 +258,13 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
     api_keys = [st.secrets["api_keys"][f"APISPORTS_KEY_{i}"] for i in range(1, 5)]
     headers_list = [{'x-rapidapi-host': "v3.football.api-sports.io", 'x-rapidapi-key': key} for key in api_keys]
     
+    # Major Leagues IDs for Domestic Standings Check
     MAJOR_LEAGUE_IDS = {'Premier League': 39, 'La Liga': 140, 'Serie A': 135, 'Bundesliga': 78, 'Ligue 1': 61}
     
     for headers in headers_list:
         try:
             time.sleep(2)
+            # ၁။ Fixture ID နှင့် Team ID အစစ်အမှန်များကို ရှာဖွေခြင်း
             search_url = f"https://v3.football.api-sports.io/fixtures?date={match_date}"
             res = requests.get(search_url, headers=headers, timeout=15).json()
             
@@ -284,24 +286,27 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
             league_id = fixture_obj['league']['id']
             season = fixture_obj['league']['season']
 
+            # ၂။ Standings (Current League + Major League Check) - API Structure အမှန်အတိုင်း ပြင်ဆင်ခြင်း
             standings_data = ""
             s_res = requests.get(f"https://v3.football.api-sports.io/standings?league={league_id}&season={season}", headers=headers, timeout=10).json()
             if s_res.get('response') and s_res['response']:
+                # Standings list ထဲက group တစ်ခုချင်းစီကို ပတ်စစ်ခြင်း (Champions League Group များအတွက်)
                 for group in s_res['response'][0]['league']['standings']:
                     for rank in group:
-                        if rank['team']['id'] in [h_real_id, a_real_id]:
-                            standings_data += f"[{s_res['response'][0]['league']['name']}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
+                        if int(rank['team']['id']) in [int(h_real_id), int(a_real_id)]:
+                            standings_data += f"[{s_res['response'][0]['league']['name']}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}, Form: {rank.get('form', 'N/A')}). "
 
             if any(x in fixture_obj['league']['name'] for x in ["Champions League", "Europa League"]):
                 for m_name, m_id in MAJOR_LEAGUE_IDS.items():
                     time.sleep(0.5)
                     m_res = requests.get(f"https://v3.football.api-sports.io/standings?league={m_id}&season={season}", headers=headers, timeout=10).json()
                     if m_res.get('response') and m_res['response']:
-                        for group in m_res['response'][0]['league']['standings']:
-                            for rank in group:
-                                if rank['team']['id'] in [h_real_id, a_real_id]:
-                                    standings_data += f"[Domestic {m_name}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
+                        for m_group in m_res['response'][0]['league']['standings']:
+                            for m_rank in m_group:
+                                if int(m_rank['team']['id']) in [int(h_real_id), int(a_real_id)]:
+                                    standings_data += f"[Domestic {m_name}] {m_rank['team']['name']}: Rank {m_rank['rank']} (Pts: {m_rank['points']}). "
 
+            # ၃။ Predictions, Injuries, Last 10, Ratings, Next Match
             pred_res = requests.get(f"https://v3.football.api-sports.io/predictions?fixture={f_id}", headers=headers, timeout=10).json()
             inj_res = requests.get(f"https://v3.football.api-sports.io/injuries?fixture={f_id}", headers=headers, timeout=10).json()
             h_l10 = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_real_id}&last=10&status=FT", headers=headers, timeout=10).json()
@@ -319,7 +324,7 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
             return {
                 'analysis': pred_res.get('response', [None])[0],
                 'injuries': inj_res.get('response', []),
-                'standings': standings_data,
+                'standings': standings_data if standings_data else "No Standings Found",
                 'h_last_10': h_l10.get('response', []),
                 'a_last_10': a_l10.get('response', []),
                 'h_ratings': h_rate_res.get('response', []),
@@ -387,13 +392,13 @@ if gen_click:
                         injury_list = [f"{i['player']['name']} ({i['player']['reason']})" for i in real_data.get('injuries', [])]
                         
                         h_top = []
-                        if real_data['h_ratings'] and len(real_data['h_ratings']) > 0:
+                        if real_data.get('h_ratings') and len(real_data['h_ratings']) > 0:
                             for p in real_data['h_ratings'][0].get('players', []):
                                 r = p['statistics'][0]['games'].get('rating')
                                 if r and float(r) > 7.0: h_top.append(f"{p['player']['name']} ({r})")
                             
                         a_top = []
-                        if real_data['a_ratings'] and len(real_data['a_ratings']) > 0:
+                        if real_data.get('a_ratings') and len(real_data['a_ratings']) > 0:
                             for p in real_data['a_ratings'][0].get('players', []):
                                 r = p['statistics'][0]['games'].get('rating')
                                 if r and float(r) > 7.0: a_top.append(f"{p['player']['name']} ({r})")
@@ -404,18 +409,20 @@ if gen_click:
 
                         stats_context = f"""
                         [SOURCE: API-SPORTS VERIFIED DATA]
-                        - Current Competition: {real_data['league_name']}
-                        - ALL RELEVANT STANDINGS: {real_data['standings']}
-                        - SQUAD UPDATE (Injuries): {', '.join(injury_list) if injury_list else 'None'}
-                        - TOP PERFORMERS (Rating): {h_team}: {', '.join(h_top[:3])} | {a_team}: {', '.join(a_top[:3])}
-                        - NEXT MATCH: {h_team} plays {h_next} | {a_team} plays {a_next}
+                        - Match Context: {h_team} vs {a_team}
+                        - Tournament: {real_data['league_name']}
+                        - STANDINGS (Points/Rank): {real_data['standings']}
+                        - SQUAD UPDATE (Injuries): {', '.join(injury_list) if injury_list else 'None Reported'}
+                        - TOP PERFORMERS: {h_team}: {', '.join(h_top[:3]) if h_top else 'N/A'} | {a_team}: {', '.join(a_top[:3]) if a_top else 'N/A'}
+                        - NEXT MATCH (Schedule): {h_team} vs {h_next} | {a_team} vs {a_next}
                         """
 
                         prompt = f"""
                         SYSTEM INSTRUCTION: You are a professional 2026 tactical analyst.
-                        - STRICT: Use ONLY provided [SOURCE] data. 
-                        - CRITICAL: Always prioritize Domestic Major League standings. 
-                        - LOGIC: If a team is safe in Champions League (Rank 1-8) but has a crucial domestic title race or derby next, predict heavy rotation.
+                        - STRICT: Use ONLY provided [SOURCE] data for facts.
+                        - KNOWLEDGE: Domestic Major Leagues are Premier League, La Liga, Serie A, Bundesliga, Ligue 1.
+                        - COMPARISON: Compare current {real_data['league_name']} standings with Domestic League status.
+                        - LOGIC: If a team is safe in Champions League but has a crucial Domestic title race/derby next, predict heavy rotation.
                         
                         {stats_context}
 
@@ -423,9 +430,9 @@ if gen_click:
 
                         OUTPUT FORMAT:
                         # သုံးသပ်ချက်
-                        **{h_team} ခြေစွမ်းနှင့် ပြိုင်ပွဲစုံရပ်တည်မှု** (Domestic League နှင့် Current League အဆင့်ကို နှိုင်းယှဉ်၍ ၅ ကြောင်း)
-                        **{a_team} ခြေစွမ်းနှင့် ပြိုင်ပွဲစုံရပ်တည်မှု** (Domestic League နှင့် Current League အဆင့်ကို နှိုင်းယှဉ်၍ ၅ ကြောင်း)
-                        **ပွဲစဉ်ဦးစားပေးမှုနှင့် Squad Rotation** (လာမည့် Major League ပွဲ၏အရေးကြီးပုံကို ကိုးကား၍ ၅ ကြောင်း)
+                        **{h_team} ခြေစွမ်းနှင့် ပြိုင်ပွဲစုံရပ်တည်မှု** (ပြည်တွင်းလိဂ်နှင့် {real_data['league_name']} အဆင့်ကို နှိုင်းယှဉ်၍ ၅ ကြောင်း)
+                        **{a_team} ခြေစွမ်းနှင့် ပြိုင်ပွဲစုံရပ်တည်မှု** (ပြည်တွင်းလိဂ်နှင့် {real_data['league_name']} အဆင့်ကို နှိုင်းယှဉ်၍ ၅ ကြောင်း)
+                        **ပွဲစဉ်ဦးစားပေးမှုနှင့် Squad Rotation** (လာမည့် ပြည်တွင်းလိဂ်ပွဲ၏အရေးကြီးပုံကို ကိုးကား၍ ၅ ကြောင်း)
                         **နည်းဗျူဟာပိုင်းဆိုင်ရာ ခွဲခြမ်းစိတ်ဖြာမှု** (၅ ကြောင်း)
 
                         ### **Summarize Table**
@@ -437,7 +444,7 @@ if gen_click:
                         | BTTS (Yes/No) | [Result] |
 
                         # **🏆 အကျိုးအကြောင်းခိုင်လုံဆုံးရွေးချယ်မှု: [ရလဒ်]**
-                        Reasoning: (Domestic League Ranking, CL Standing နှင့် Schedule တို့ကို ပေါင်းစပ်၍ ၆ ကြောင်း တိကျစွာဖြေဆိုပါ)
+                        Reasoning: (Domestic League Ranking, Current Tournament Standing နှင့် Schedule တို့ကို ပေါင်းစပ်၍ ၆ ကြောင်း တိကျစွာဖြေဆိုပါ)
                         """
                         response_text = get_gemini_response_rotated(prompt)
                         final_output = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{response_text}</div>'
@@ -449,4 +456,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-        
+
