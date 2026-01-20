@@ -31,6 +31,7 @@ def get_disk_cache(key):
             with open(file_path, "r") as f:
                 cache_data = json.load(f)
                 expiry = datetime.datetime.fromisoformat(cache_data['expiry'])
+                # Warning ပျောက်ရန် timezone-aware conversion သုံးထားသည်
                 if datetime.datetime.now(datetime.timezone.utc) < expiry.replace(tzinfo=datetime.timezone.utc):
                     return cache_data['data']
         except:
@@ -49,7 +50,7 @@ def set_disk_cache(key, data, expiry_dt=None, days=19):
     except Exception as e:
         st.sidebar.error(f"Cache Error: {str(e)}")
 
-# Time Handling (Warning ပျောက်ရန် utcnow အစား timezone-aware object သုံးခြင်း)
+# Time Handling (Warning ပျောက်ရန် utcnow အစား now(datetime.timezone.utc) သုံးခြင်း)
 now_mm = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=6, minutes=30)
 today_mm = now_mm.date()
 yesterday_mm = today_mm - datetime.timedelta(days=1)
@@ -206,7 +207,7 @@ if check_click:
                     st.session_state.a_teams = sorted(list(a_set)) if a_set else ["No matches found"]
                     
                     # Table Cache သိမ်းဆည်းခြင်း (၅၉ မိနစ်)
-                    cache_expiry = datetime.datetime.now() + datetime.timedelta(minutes=59)
+                    cache_expiry = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=59)
                     set_disk_cache(table_cache_key, {
                         'matches': st.session_state.display_matches,
                         'h_teams': st.session_state.h_teams,
@@ -256,19 +257,19 @@ elif st.session_state.check_performed:
 # ၄။ Select Team Title
 st.markdown(f'<div class="title-style" style="font-size:45px; margin-top:20px;">{d[lang]["title2"]}</div>', unsafe_allow_html=True)
 
-
-# --- Helper: AI Key Rotation ---
+# --- Helper: AI Key Rotation (Updated for google-genai) ---
 def get_gemini_response_rotated(prompt):
     ai_keys = [st.secrets["gemini_keys"][f"GEMINI_KEY_{i}"] for i in range(1, 4)]
     
     for key in ai_keys:
         try:
-            genai.configure(api_key=key)
-            model = genai.GenerativeModel(
-                'gemini-flash-latest',
-                generation_config={"temperature": 0}
+            # New GenAI Client Library approach
+            client = genai.Client(api_key=key)
+            response = client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt
             )
-            return model.generate_content(prompt).text
+            return response.text
         except Exception:
             continue 
     return "⚠️ AI Service Busy. Please try again later."
@@ -303,9 +304,10 @@ if gen_click:
                 progress_bar.progress(percent_complete + 1)
                 
             with st.spinner('AI is analyzing stats & H2H...'):
-                match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ")
+                match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
                 expiry_dt = match_utc + datetime.timedelta(hours=1)
-                expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.utcnow())
+                # Warning ပျောက်ရန် utcnow အစား timezone-aware object ကို သုံး၍ တွက်ချက်ခြင်း
+                expiry_dt_naive = datetime.datetime.now() + (expiry_dt - datetime.datetime.now(datetime.timezone.utc))
                 
                 cache_key = f"pred_fixed_mm_{h_team}_{a_team}_{today_mm}"
                 cached_result = get_disk_cache(cache_key)
@@ -365,4 +367,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-
+        
