@@ -138,7 +138,7 @@ sel_date = st.date_input("D", value=today_mm, min_value=today_mm, label_visibili
 
 # ၃။ Check Matches Now
 st.markdown('<div class="check-btn-wrapper">', unsafe_allow_html=True)
-check_click = st.button(d[lang]["btn_check"], key="check_btn", use_container_width=True)
+check_click = st.button(d[lang][], key="check_btn", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 if check_click:
@@ -260,6 +260,9 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
     api_keys = [st.secrets["api_keys"][f"APISPORTS_KEY_{i}"] for i in range(1, 5)]
     headers_list = [{'x-rapidapi-host': "v3.football.api-sports.io", 'x-rapidapi-key': key} for key in api_keys]
     
+    # Major Leagues IDs for Domestic Standings Check
+    MAJOR_LEAGUE_IDS = {'Premier League': 39, 'La Liga': 140, 'Serie A': 135, 'Bundesliga': 78, 'Ligue 1': 61}
+    
     for headers in headers_list:
         try:
             # ၁။ Fixture ID နှင့် Team ID အစစ်အမှန်များကို ရှာဖွေခြင်း
@@ -280,35 +283,52 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
             league_id = fixture_obj['league']['id']
             season = fixture_obj['league']['season']
 
-            # ၂။ Predictions, Injuries
+            # ၂။ Standings (Current League + Major League Check)
+            standings_data = ""
+            # Current Match League Standing
+            s_res = requests.get(f"https://v3.football.api-sports.io/standings?league={league_id}&season={season}", headers=headers, timeout=10).json()
+            if s_res.get('response'):
+                for rank in s_res['response'][0]['league']['standings'][0]:
+                    if rank['team']['id'] in [h_real_id, a_real_id]:
+                        standings_data += f"[{s_res['response'][0]['league']['name']}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
+
+            # ပွဲစဉ်သည် CL/EL ဖြစ်နေပါက Major League Standing ကိုပါ ထပ်ယူခြင်း
+            if "Champions League" in fixture_obj['league']['name'] or "Europa League" in fixture_obj['league']['name']:
+                for m_name, m_id in MAJOR_LEAGUE_IDS.items():
+                    m_res = requests.get(f"https://v3.football.api-sports.io/standings?league={m_id}&season={season}", headers=headers, timeout=10).json()
+                    if m_res.get('response'):
+                        for rank in m_res['response'][0]['league']['standings'][0]:
+                            if rank['team']['id'] in [h_real_id, a_real_id]:
+                                standings_data += f"[Domestic {m_name}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
+
+            # ၃။ Predictions, Injuries, Last 10, Ratings, Next Match
             pred_res = requests.get(f"https://v3.football.api-sports.io/predictions?fixture={f_id}", headers=headers, timeout=10).json()
             inj_res = requests.get(f"https://v3.football.api-sports.io/injuries?fixture={f_id}", headers=headers, timeout=10).json()
+            h_l10 = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_real_id}&last=10&status=FT", headers=headers, timeout=10).json()
+            a_l10 = requests.get(f"https://v3.football.api-sports.io/fixtures?team={a_real_id}&last=10&status=FT", headers=headers, timeout=10).json()
             
-            # ၃။ Standings - ပြိုင်ပွဲစုံ (ဥပမာ CL နှင့် Domestic League) သိရန် Multi-call လုပ်ခြင်း
-            # Note: league_id က လက်ရှိ fixture ရဲ့ league ဖြစ်သော်လည်း အခြား standings များကို AI က context အရ သိရန် လိုအပ်သည်
-            standings_res = requests.get(f"https://v3.football.api-sports.io/standings?league={league_id}&season={season}", headers=headers, timeout=10).json()
-
-            # ၄။ ပြီးဆုံးပြီးသားပွဲစဉ် ၁၀ ပွဲကို ID အစစ်ဖြင့် ဆွဲယူခြင်း
-            h_last_10 = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_real_id}&last=10&status=FT", headers=headers, timeout=10).json()
-            a_last_10 = requests.get(f"https://v3.football.api-sports.io/fixtures?team={a_real_id}&last=10&status=FT", headers=headers, timeout=10).json()
-
-            # ၅။ လာမည့်ပွဲစဉ်များ (Schedule)
+            h_last_fid = h_l10['response'][0]['fixture']['id'] if h_l10.get('response') else None
+            a_last_fid = a_l10['response'][0]['fixture']['id'] if a_l10.get('response') else None
+            h_rate = requests.get(f"https://v3.football.api-sports.io/fixtures/players?fixture={h_last_fid}&team={h_real_id}", headers=headers, timeout=10).json() if h_last_fid else {}
+            a_rate = requests.get(f"https://v3.football.api-sports.io/fixtures/players?fixture={a_last_fid}&team={a_real_id}", headers=headers, timeout=10).json() if a_last_fid else {}
+            
             h_next = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_real_id}&next=2", headers=headers, timeout=10).json()
             a_next = requests.get(f"https://v3.football.api-sports.io/fixtures?team={a_real_id}&next=2", headers=headers, timeout=10).json()
 
             return {
                 'analysis': pred_res.get('response', [None])[0],
                 'injuries': inj_res.get('response', []),
-                'standings': standings_res.get('response', []),
-                'h_last_10': h_last_10.get('response', []),
-                'a_last_10': a_last_10.get('response', []),
+                'standings': standings_data,
+                'h_last_10': h_l10.get('response', []),
+                'a_last_10': a_l10.get('response', []),
+                'h_ratings': h_rate.get('response', []),
+                'a_ratings': a_rate.get('response', []),
                 'h_schedule': h_next.get('response', []),
                 'a_schedule': a_next.get('response', []),
-                'h_id': h_real_id,
-                'a_id': a_real_id
+                'h_id': h_real_id, 'a_id': a_real_id,
+                'league_name': fixture_obj['league']['name']
             }
-        except:
-            continue 
+        except: continue 
     return None
 
 # --- Helper: AI Key Rotation ---
@@ -323,8 +343,7 @@ def get_gemini_response_rotated(prompt):
                 config={'temperature': 0}
             )
             return response.text
-        except:
-            continue 
+        except: continue 
     return "⚠️ AI Service Busy. Please try again later."
 
 # ၅။ Home vs Away Section
@@ -352,97 +371,73 @@ if gen_click:
                 time.sleep(0.01)
                 progress_bar.progress(percent_complete + 1)
                 
-            with st.spinner('AI is analyzing 10-match history with venue filters...'):
+            with st.spinner('AI is analyzing real-time data from API...'):
                 match_utc = datetime.datetime.strptime(match_obj['utc_str'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
                 expiry_dt_naive = datetime.datetime.now() + (match_utc + datetime.timedelta(hours=1) - datetime.datetime.now(datetime.timezone.utc))
                 
-                cache_key = f"pred_hybrid_v9_priority_{h_team}_{a_team}_{today_mm}"
+                cache_key = f"pred_final_v12_major_{h_team}_{a_team}_{today_mm}"
                 cached_result = get_disk_cache(cache_key)
 
                 if cached_result:
                     st.markdown(cached_result, unsafe_allow_html=True)
                 else:
                     real_data = get_api_sports_stats(h_team, a_team, today_mm.isoformat())
-                    
-                    stats_context = "No detailed real-time data available."
                     if real_data:
-                        h_id = real_data['h_id']
-                        a_id = real_data['a_id']
-                        h_l10 = real_data['h_last_10']
-                        a_l10 = real_data['a_last_10']
+                        h_id, a_id = real_data['h_id'], real_data['a_id']
+                        injury_list = [f"{i['player']['name']} ({i['player']['reason']})" for i in real_data.get('injuries', [])]
                         
-                        # ပြိုင်ပွဲစုံ နောက်ဆုံး ၅ ပွဲ
-                        h_recent_5 = [f"[{m['league']['name']}] {m['goals']['home']}-{m['goals']['away']} vs {m['teams']['away']['name'] if m['teams']['home']['id']==h_id else m['teams']['home']['name']}" for m in h_l10[:5]]
-                        a_recent_5 = [f"[{m['league']['name']}] {m['goals']['home']}-{m['goals']['away']} vs {m['teams']['away']['name'] if m['teams']['home']['id']==a_id else m['teams']['home']['name']}" for m in a_l10[:5]]
-                        
-                        # အိမ်ကွင်း/အဝေးကွင်း သီးသန့် ၅ ပွဲ
-                        h_home_5 = [f"[{m['league']['name']}] {m['goals']['home']}-{m['goals']['away']} vs {m['teams']['away']['name']}" for m in h_l10 if m['teams']['home']['id'] == h_id][:5]
-                        a_away_5 = [f"[{m['league']['name']}] vs {m['teams']['home']['name']} {m['goals']['home']}-{m['goals']['away']}" for m in a_l10 if m['teams']['away']['id'] == a_id][:5]
+                        h_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['h_ratings'][0].get('players', []) if p['statistics'][0]['games']['rating'] and float(p['statistics'][0]['games']['rating']) > 7.0] if real_data['h_ratings'] else []
+                        a_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['a_ratings'][0].get('players', []) if p['statistics'][0]['games']['rating'] and float(p['statistics'][0]['games']['rating']) > 7.0] if real_data['a_ratings'] else []
 
-                        # Standings Analysis
-                        standings_str = ""
-                        if real_data.get('standings'):
-                            for league in real_data['standings']:
-                                l_name = league.get('league', {}).get('name', 'League')
-                                for rank in league.get('league', {}).get('standings', [[]])[0]:
-                                    if h_id == rank['team']['id'] or a_id == rank['team']['id']:
-                                        standings_str += f"{rank['team']['name']} in {l_name}: Rank {rank['rank']} (Pts: {rank['points']}), "
-
-                        h_n = real_data['h_schedule'][0] if real_data.get('h_schedule') else None
-                        a_n = real_data['a_schedule'][0] if real_data.get('a_schedule') else None
-                        h_next_info = f"[{h_n['league']['name']}] vs {h_n['teams']['away']['name'] if h_n['teams']['home']['id']==h_id else h_n['teams']['home']['name']} on {h_n['fixture']['date']}" if h_n else "N/A"
-                        a_next_info = f"[{a_n['league']['name']}] vs {a_n['teams']['away']['name'] if a_n['teams']['home']['id']==a_id else a_n['teams']['home']['name']} on {a_n['fixture']['date']}" if a_n else "N/A"
+                        h_n, a_n = (real_data['h_schedule'][0] if real_data['h_schedule'] else None), (real_data['a_schedule'][0] if real_data['a_schedule'] else None)
+                        h_next = f"[{h_n['league']['name']}] vs {h_n['teams']['away']['name'] if h_n['teams']['home']['id']==h_id else h_n['teams']['home']['name']}" if h_n else "N/A"
+                        a_next = f"[{a_n['league']['name']}] vs {a_n['teams']['away']['name'] if a_n['teams']['home']['id']==a_id else a_n['teams']['home']['name']}" if a_n else "N/A"
 
                         stats_context = f"""
-                        STRICT VERIFIED DATA (Team IDs: {h_id}, {a_id}):
-                        - STANDINGS: {standings_str}
-                        - {h_team} OVERALL 5: {', '.join(h_recent_5)}
-                        - {h_team} HOME ONLY 5: {', '.join(h_home_5)}
-                        - {a_team} OVERALL 5: {', '.join(a_recent_5)}
-                        - {a_team} AWAY ONLY 5: {', '.join(a_away_5)}
-                        - NEXT MATCH: {h_team}: {h_next_info} | {a_team}: {a_next_info}
-                        - INJURIES: {', '.join([i['player']['name'] for i in real_data.get('injuries', [])]) if real_data.get('injuries') else 'None'}
+                        [SOURCE: API-SPORTS VERIFIED DATA]
+                        - Current Competition: {real_data['league_name']}
+                        - ALL RELEVANT STANDINGS: {real_data['standings']}
+                        - SQUAD UPDATE (Injuries): {', '.join(injury_list) if injury_list else 'None'}
+                        - TOP PERFORMERS (Rating): {h_team}: {', '.join(h_top[:3])} | {a_team}: {', '.join(a_top[:3])}
+                        - NEXT MATCH: {h_team} plays {h_next} | {a_team} plays {a_next}
                         """
 
-                    prompt = f"""
-                    SYSTEM INSTRUCTION: You are a strategic football analyst. 
-                    - DATE: {datetime.date.today()}
-                    - IGNORE pre-training knowledge. ONLY use the provided STRICT VERIFIED DATA.
-                    
-                    {stats_context}
-                    
-                    CRITICAL LOGIC TASK (Squad Rotation & Priority):
-                    1. Check if a team is "Safe" or "Leading" in one competition (e.g., Champions League Rank 1) but has a "High-Stakes" match in another (e.g., Premier League Title Race).
-                    2. If the "NEXT MATCH" is more critical than the current one, conclude that "Squad Rotation" is highly likely.
-                    3. Compare the "Overall Form" with "Venue-Specific Form" (Home/Away).
-                    
-                    Respond strictly in BURMESE (Unicode).
+                        prompt = f"""
+                        SYSTEM INSTRUCTION: You are a professional 2026 tactical analyst.
+                        - STRICT: Use ONLY provided [SOURCE] data. 
+                        - CRITICAL: Always prioritize Domestic Major League standings. 
+                        - LOGIC: If a team is safe in Champions League (Rank 1-8) but has a crucial domestic title race or derby next, predict heavy rotation.
+                        
+                        {stats_context}
 
-                    OUTPUT FORMAT:
-                    # သုံးသပ်ချက်
-                    **{h_team} ခြေစွမ်းနှင့် အိမ်ကွင်းအချက်အလက်** (၅ ကြောင်း)
-                    **{a_team} ခြေစွမ်းနှင့် အဝေးကွင်းအချက်အလက်** (၅ ကြောင်း)
-                    **ပွဲစဉ်ဦးစားပေးမှုနှင့် လူချန်နိုင်ခြေ (Squad Rotation)** (လက်ရှိပြိုင်ပွဲအဆင့်နှင့် လာမည့်ပွဲ၏အရေးကြီးပုံကို နှိုင်းယှဉ်၍ ၅ ကြောင်း အသေးစိတ်ခွဲခြမ်းစိတ်ဖြာပါ)
-                    **နည်းဗျူဟာပိုင်းဆိုင်ရာ ဝေဖန်ချက်** (၅ ကြောင်း)
+                        Respond strictly in BURMESE (Unicode).
 
-                    ### **Summarize Table**
-                    | Category | Prediction |
-                    | :--- | :--- |
-                    | Winner Team | [Team Name] |
-                    | Correct Score | [Result] |
-                    | Goal under/over | [Result] |
-                    | BTTS (Yes/No) | [Result] |
+                        OUTPUT FORMAT:
+                        # သုံးသပ်ချက်
+                        **{h_team} ခြေစွမ်းနှင့် ပြိုင်ပွဲစုံရပ်တည်မှု** (Domestic League နှင့် Current League အဆင့်ကို နှိုင်းယှဉ်၍ ၅ ကြောင်း)
+                        **{a_team} ခြေစွမ်းနှင့် ပြိုင်ပွဲစုံရပ်တည်မှု** (Domestic League နှင့် Current League အဆင့်ကို နှိုင်းယှဉ်၍ ၅ ကြောင်း)
+                        **ပွဲစဉ်ဦးစားပေးမှုနှင့် Squad Rotation** (လာမည့် Major League ပွဲ၏အရေးကြီးပုံကို ကိုးကား၍ ၅ ကြောင်း)
+                        **နည်းဗျူဟာပိုင်းဆိုင်ရာ ခွဲခြမ်းစိတ်ဖြာမှု** (၅ ကြောင်း)
 
-                    # **🏆 အကျိုးအကြောင်းခိုင်လုံဆုံးရွေးချယ်မှု: [ရလဒ်]**
-                    Reasoning: (Standings အခြေအနေ၊ အဝေးကွင်း/အိမ်ကွင်း ဒေတာနှင့် Squad Rotation ဖြစ်နိုင်ခြေတို့ကို ပေါင်းစပ်၍ ၆ ကြောင်း တိကျစွာဖြေဆိုပါ)
-                    """
-                    
-                    response_text = get_gemini_response_rotated(prompt)
-                    final_output = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{response_text}</div>'
-                    set_disk_cache(cache_key, final_output, expiry_dt=expiry_dt_naive)
-                    st.markdown(final_output, unsafe_allow_html=True)
+                        ### **Summarize Table**
+                        | Category | Prediction |
+                        | :--- | :--- |
+                        | Winner Team | [မြန်မာလို] |
+                        | Correct Score | [Result] |
+                        | Goal under/over | [Result] |
+                        | BTTS (Yes/No) | [Result] |
+
+                        # **🏆 အကျိုးအကြောင်းခိုင်လုံဆုံးရွေးချယ်မှု: [ရလဒ်]**
+                        Reasoning: (Domestic League Ranking, CL Standing နှင့် Schedule တို့ကို ပေါင်းစပ်၍ ၆ ကြောင်း တိကျစွာဖြေဆိုပါ)
+                        """
+                        response_text = get_gemini_response_rotated(prompt)
+                        final_output = f'<div style="background:#0c0c0c; padding:20px; border-radius:15px; border:1px solid #39FF14; color:white;">{response_text}</div>'
+                        set_disk_cache(cache_key, final_output, expiry_dt=expiry_dt_naive)
+                        st.markdown(final_output, unsafe_allow_html=True)
+                    else:
+                        st.error("No real-time data available from API.")
         else:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-        
+
