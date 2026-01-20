@@ -258,15 +258,11 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
     api_keys = [st.secrets["api_keys"][f"APISPORTS_KEY_{i}"] for i in range(1, 5)]
     headers_list = [{'x-rapidapi-host': "v3.football.api-sports.io", 'x-rapidapi-key': key} for key in api_keys]
     
-    # Major Leagues IDs for Domestic Standings Check
     MAJOR_LEAGUE_IDS = {'Premier League': 39, 'La Liga': 140, 'Serie A': 135, 'Bundesliga': 78, 'Ligue 1': 61}
     
     for headers in headers_list:
         try:
-            # အကောင့်များ Spam ဖြစ်ပြီး အပိတ်မခံရစေရန် ၂ စက္ကန့် ခြားခြင်း
             time.sleep(2)
-            
-            # ၁။ Fixture ID နှင့် Team ID အစစ်အမှန်များကို ရှာဖွေခြင်း
             search_url = f"https://v3.football.api-sports.io/fixtures?date={match_date}"
             res = requests.get(search_url, headers=headers, timeout=15).json()
             
@@ -277,7 +273,6 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
                     f_away = f['teams']['away']['name'].lower()
                     h_target = h_team.lower()
                     a_target = a_team.lower()
-                    
                     if (h_target in f_home or f_home in h_target) and (a_target in f_away or f_away in a_target):
                         fixture_obj = f
                         break
@@ -289,26 +284,24 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
             league_id = fixture_obj['league']['id']
             season = fixture_obj['league']['season']
 
-            # ၂။ Standings (Current League + Major League Check)
             standings_data = ""
             s_res = requests.get(f"https://v3.football.api-sports.io/standings?league={league_id}&season={season}", headers=headers, timeout=10).json()
-            if s_res.get('response'):
-                for rank in s_res['response'][0]['league']['standings'][0]:
-                    if rank['team']['id'] in [h_real_id, a_real_id]:
-                        standings_data += f"[{s_res['response'][0]['league']['name']}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
+            if s_res.get('response') and s_res['response']:
+                for group in s_res['response'][0]['league']['standings']:
+                    for rank in group:
+                        if rank['team']['id'] in [h_real_id, a_real_id]:
+                            standings_data += f"[{s_res['response'][0]['league']['name']}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
 
             if any(x in fixture_obj['league']['name'] for x in ["Champions League", "Europa League"]):
                 for m_name, m_id in MAJOR_LEAGUE_IDS.items():
-                    # Request တစ်ခုချင်းစီကြား ခေတ္တနားခြင်း
-                    time.sleep(1)
+                    time.sleep(0.5)
                     m_res = requests.get(f"https://v3.football.api-sports.io/standings?league={m_id}&season={season}", headers=headers, timeout=10).json()
-                    if m_res.get('response'):
-                        for rank in m_res['response'][0]['league']['standings'][0]:
-                            if rank['team']['id'] in [h_real_id, a_real_id]:
-                                standings_data += f"[Domestic {m_name}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
+                    if m_res.get('response') and m_res['response']:
+                        for group in m_res['response'][0]['league']['standings']:
+                            for rank in group:
+                                if rank['team']['id'] in [h_real_id, a_real_id]:
+                                    standings_data += f"[Domestic {m_name}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
 
-            # ၃။ Predictions, Injuries, Last 10, Ratings, Next Match
-            time.sleep(1)
             pred_res = requests.get(f"https://v3.football.api-sports.io/predictions?fixture={f_id}", headers=headers, timeout=10).json()
             inj_res = requests.get(f"https://v3.football.api-sports.io/injuries?fixture={f_id}", headers=headers, timeout=10).json()
             h_l10 = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_real_id}&last=10&status=FT", headers=headers, timeout=10).json()
@@ -365,7 +358,6 @@ with c2:
     st.markdown(f'<p style="color:white; text-align:center; font-weight:900; font-size:12px;">{d[lang]["away"]}</p>', unsafe_allow_html=True)
     a_team = st.selectbox("A", st.session_state.a_teams, key="a", label_visibility="collapsed")
 
-# ၆။ Orange Glossy Button & Validation Logic
 st.markdown('<div class="gen-btn-wrapper">', unsafe_allow_html=True)
 gen_click = st.button(d[lang]["btn_gen"], key="gen_btn", use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
@@ -395,12 +387,16 @@ if gen_click:
                         injury_list = [f"{i['player']['name']} ({i['player']['reason']})" for i in real_data.get('injuries', [])]
                         
                         h_top = []
-                        if real_data['h_ratings'] and 'players' in real_data['h_ratings'][0]:
-                            h_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['h_ratings'][0]['players'] if p.get('statistics') and p['statistics'][0]['games'].get('rating') and float(p['statistics'][0]['games']['rating']) > 7.0]
+                        if real_data['h_ratings'] and len(real_data['h_ratings']) > 0:
+                            for p in real_data['h_ratings'][0].get('players', []):
+                                r = p['statistics'][0]['games'].get('rating')
+                                if r and float(r) > 7.0: h_top.append(f"{p['player']['name']} ({r})")
                             
                         a_top = []
-                        if real_data['a_ratings'] and 'players' in real_data['a_ratings'][0]:
-                            a_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['a_ratings'][0]['players'] if p.get('statistics') and p['statistics'][0]['games'].get('rating') and float(p['statistics'][0]['games']['rating']) > 7.0]
+                        if real_data['a_ratings'] and len(real_data['a_ratings']) > 0:
+                            for p in real_data['a_ratings'][0].get('players', []):
+                                r = p['statistics'][0]['games'].get('rating')
+                                if r and float(r) > 7.0: a_top.append(f"{p['player']['name']} ({r})")
 
                         h_n, a_n = (real_data['h_schedule'][0] if real_data['h_schedule'] else None), (real_data['a_schedule'][0] if real_data['a_schedule'] else None)
                         h_next = f"[{h_n['league']['name']}] vs {h_n['teams']['away']['name'] if h_n['teams']['home']['id']==h_id else h_n['teams']['home']['name']}" if h_n else "N/A"
@@ -453,4 +449,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-
+        
