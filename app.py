@@ -270,7 +270,13 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
             fixture_obj = None
             if 'response' in res and res['response']:
                 for f in res['response']:
-                    if (h_team.lower() in f['teams']['home']['name'].lower() or f['teams']['home']['name'].lower() in h_team.lower()):
+                    # ပြင်ဆင်ချက် - အသင်းနာမည် နှစ်ခုလုံး ပါဝင်မှုကို ပိုမိုတိကျစွာ စစ်ဆေးခြင်း
+                    f_home = f['teams']['home']['name'].lower()
+                    f_away = f['teams']['away']['name'].lower()
+                    h_target = h_team.lower()
+                    a_target = a_team.lower()
+                    
+                    if (h_target in f_home or f_home in h_target) and (a_target in f_away or f_away in a_target):
                         fixture_obj = f
                         break
             
@@ -289,7 +295,6 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
                     if rank['team']['id'] in [h_real_id, a_real_id]:
                         standings_data += f"[{s_res['response'][0]['league']['name']}] {rank['team']['name']}: Rank {rank['rank']} (Pts: {rank['points']}). "
 
-            # ပွဲစဉ်သည် CL/EL ဖြစ်နေပါက Major League Standing ကိုပါ ထပ်ယူခြင်း
             if "Champions League" in fixture_obj['league']['name'] or "Europa League" in fixture_obj['league']['name']:
                 for m_name, m_id in MAJOR_LEAGUE_IDS.items():
                     m_res = requests.get(f"https://v3.football.api-sports.io/standings?league={m_id}&season={season}", headers=headers, timeout=10).json()
@@ -307,8 +312,9 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
             h_last_fid = h_l10['response'][0]['fixture']['id'] if h_l10.get('response') else None
             a_last_fid = a_l10['response'][0]['fixture']['id'] if a_l10.get('response') else None
             
-            h_rate = requests.get(f"https://v3.football.api-sports.io/fixtures/players?fixture={h_last_fid}&team={h_real_id}", headers=headers, timeout=10).json() if h_last_fid else {}
-            a_rate = requests.get(f"https://v3.football.api-sports.io/fixtures/players?fixture={a_last_fid}&team={a_real_id}", headers=headers, timeout=10).json() if a_last_fid else {}
+            # ပြင်ဆင်ချက် - Ratings Data Structure ကို ပိုမိုသေချာစေရန် .get('response', []) သုံးထားခြင်း
+            h_rate_res = requests.get(f"https://v3.football.api-sports.io/fixtures/players?fixture={h_last_fid}&team={h_real_id}", headers=headers, timeout=10).json() if h_last_fid else {}
+            a_rate_res = requests.get(f"https://v3.football.api-sports.io/fixtures/players?fixture={a_last_fid}&team={a_real_id}", headers=headers, timeout=10).json() if a_last_fid else {}
             
             h_next = requests.get(f"https://v3.football.api-sports.io/fixtures?team={h_real_id}&next=2", headers=headers, timeout=10).json()
             a_next = requests.get(f"https://v3.football.api-sports.io/fixtures?team={a_real_id}&next=2", headers=headers, timeout=10).json()
@@ -319,8 +325,8 @@ def get_api_sports_stats(h_team, a_team, match_date, h_id=None, a_id=None):
                 'standings': standings_data,
                 'h_last_10': h_l10.get('response', []),
                 'a_last_10': a_l10.get('response', []),
-                'h_ratings': h_rate.get('response', []),
-                'a_ratings': a_rate.get('response', []),
+                'h_ratings': h_rate_res.get('response', []),
+                'a_ratings': a_rate_res.get('response', []),
                 'h_schedule': h_next.get('response', []),
                 'a_schedule': a_next.get('response', []),
                 'h_id': h_real_id, 'a_id': a_real_id,
@@ -384,8 +390,9 @@ if gen_click:
                         h_id, a_id = real_data['h_id'], real_data['a_id']
                         injury_list = [f"{i['player']['name']} ({i['player']['reason']})" for i in real_data.get('injuries', [])]
                         
-                        h_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['h_ratings'] if p.get('statistics') and p['statistics'][0].get('games') and p['statistics'][0]['games'].get('rating') and float(p['statistics'][0]['games']['rating']) > 7.0] if real_data['h_ratings'] else []
-                        a_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in real_data['a_ratings'] if p.get('statistics') and p['statistics'][0].get('games') and p['statistics'][0]['games'].get('rating') and float(p['statistics'][0]['games']['rating']) > 7.0] if real_data['a_ratings'] else []
+                        # ပြင်ဆင်ချက် - Ratings ကောက်ယူသည့် Logic အမှားကို ပြင်ဆင်ထားသည်
+                        h_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in (real_data['h_ratings'][0].get('players', []) if real_data['h_ratings'] else []) if p.get('statistics') and p['statistics'][0]['games'].get('rating') and float(p['statistics'][0]['games']['rating']) > 7.0]
+                        a_top = [f"{p['player']['name']} ({p['statistics'][0]['games']['rating']})" for p in (real_data['a_ratings'][0].get('players', []) if real_data['a_ratings'] else []) if p.get('statistics') and p['statistics'][0]['games'].get('rating') and float(p['statistics'][0]['games']['rating']) > 7.0]
 
                         h_n, a_n = (real_data['h_schedule'][0] if real_data['h_schedule'] else None), (real_data['a_schedule'][0] if real_data['a_schedule'] else None)
                         h_next = f"[{h_n['league']['name']}] vs {h_n['teams']['away']['name'] if h_n['teams']['home']['id']==h_id else h_n['teams']['home']['name']}" if h_n else "N/A"
@@ -438,4 +445,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-        
+
