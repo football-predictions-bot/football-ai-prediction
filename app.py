@@ -16,30 +16,38 @@ st.set_page_config(
 )
 
 # --- Disk Caching System ---
-# Streamlit Cloud Permission ရရန် /tmp directory သုံးထားသည်
+# Streamlit Cloud တွင် Permission Error မတက်စေရန် Folder handling ကို try-except ဖြင့် ပြင်ဆင်ထားသည်
 CACHE_DIR = "/tmp/data_cache"
-if not os.path.exists(CACHE_DIR):
-    os.makedirs(CACHE_DIR)
+try:
+    if not os.path.exists(CACHE_DIR):
+        os.makedirs(CACHE_DIR, exist_ok=True)
+except Exception:
+    CACHE_DIR = "/tmp"
 
 def get_disk_cache(key):
-    # Cache File ကို ဖတ်ပြီး Expiry မကျော်သေးရင် Data ပြန်ပေးသည်
     file_path = os.path.join(CACHE_DIR, f"{key}.json")
     if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            cache_data = json.load(f)
-            expiry = datetime.datetime.fromisoformat(cache_data['expiry'])
-            if datetime.datetime.now() < expiry:
-                return cache_data['data']
+        try:
+            with open(file_path, "r") as f:
+                cache_data = json.load(f)
+                expiry = datetime.datetime.fromisoformat(cache_data['expiry'])
+                if datetime.datetime.now() < expiry:
+                    return cache_data['data']
+        except:
+            return None
     return None
 
 def set_disk_cache(key, data, expiry_dt=None, days=19):
-    # Expiry အတိအကျမပေးရင် ၁၉ ရက်ထားမယ်
     if expiry_dt is None:
         expiry_dt = datetime.datetime.now() + datetime.timedelta(days=days)
     
     file_path = os.path.join(CACHE_DIR, f"{key}.json")
-    with open(file_path, "w") as f:
-        json.dump({'data': data, 'expiry': expiry_dt.isoformat()}, f)
+    try:
+        with open(file_path, "w") as f:
+            json.dump({'data': data, 'expiry': expiry_dt.isoformat()}, f)
+    except Exception as e:
+        # App တစ်ခုလုံး Error တက်ပြီး ရပ်မသွားစေရန်
+        st.sidebar.error(f"Cache Error: {str(e)}")
 
 # Time Handling (Modified for Timezone Stability)
 now_mm = datetime.datetime.utcnow() + datetime.timedelta(hours=6, minutes=30)
@@ -116,6 +124,7 @@ with col_lang:
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown(f'<div class="title-style">{d[lang]["title1"]}</div>', unsafe_allow_html=True)
+
 
 # ၂။ Select League & Date
 st.markdown(f'<p style="color:#aaa; margin-left:15px;">{d[lang]["sel_league"]}</p>', unsafe_allow_html=True)
