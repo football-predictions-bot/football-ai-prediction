@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
 import requests
-import google.generativeai as genai
+from google import genai  # Warning ပျောက်ရန် Version အသစ်သို့ ပြောင်းလဲခြင်း
 import time
 import json
 import os
@@ -16,7 +16,6 @@ st.set_page_config(
 )
 
 # --- Disk Caching System ---
-# Streamlit Cloud တွင် Permission Error မတက်စေရန် Folder handling ကို try-except ဖြင့် ပြင်ဆင်ထားသည်
 CACHE_DIR = "/tmp/data_cache"
 try:
     if not os.path.exists(CACHE_DIR):
@@ -25,7 +24,6 @@ except Exception:
     CACHE_DIR = "/tmp"
 
 def get_disk_cache(key):
-    # အသင်းနာမည်ထဲက "/" များကို "_" ဖြင့် အစားထိုး၍ File Error ကို ကာကွယ်ခြင်း
     safe_key = key.replace("/", "_")
     file_path = os.path.join(CACHE_DIR, f"{safe_key}.json")
     if os.path.exists(file_path):
@@ -33,7 +31,7 @@ def get_disk_cache(key):
             with open(file_path, "r") as f:
                 cache_data = json.load(f)
                 expiry = datetime.datetime.fromisoformat(cache_data['expiry'])
-                if datetime.datetime.now() < expiry:
+                if datetime.datetime.now(datetime.timezone.utc) < expiry.replace(tzinfo=datetime.timezone.utc):
                     return cache_data['data']
         except:
             return None
@@ -41,20 +39,18 @@ def get_disk_cache(key):
 
 def set_disk_cache(key, data, expiry_dt=None, days=19):
     if expiry_dt is None:
-        expiry_dt = datetime.datetime.now() + datetime.timedelta(days=days)
+        expiry_dt = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)
     
-    # အသင်းနာမည်ထဲက "/" များကို "_" ဖြင့် အစားထိုး၍ File Error ကို ကာကွယ်ခြင်း
     safe_key = key.replace("/", "_")
     file_path = os.path.join(CACHE_DIR, f"{safe_key}.json")
     try:
         with open(file_path, "w") as f:
             json.dump({'data': data, 'expiry': expiry_dt.isoformat()}, f)
     except Exception as e:
-        # App တစ်ခုလုံး Error တက်ပြီး ရပ်မသွားစေရန်
         st.sidebar.error(f"Cache Error: {str(e)}")
 
-# Time Handling (Modified for Timezone Stability)
-now_mm = datetime.datetime.utcnow() + datetime.timedelta(hours=6, minutes=30)
+# Time Handling (Warning ပျောက်ရန် utcnow အစား timezone-aware object သုံးခြင်း)
+now_mm = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=6, minutes=30)
 today_mm = now_mm.date()
 yesterday_mm = today_mm - datetime.timedelta(days=1)
 tomorrow_mm = today_mm + datetime.timedelta(days=1)
