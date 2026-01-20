@@ -40,9 +40,11 @@ def set_disk_cache(key, data, expiry_dt=None, days=19):
     with open(file_path, "w") as f:
         json.dump({'data': data, 'expiry': expiry_dt.isoformat()}, f)
 
-# Time Handling
+# Time Handling (Modified for Timezone Stability)
 now_mm = datetime.datetime.utcnow() + datetime.timedelta(hours=6, minutes=30)
 today_mm = now_mm.date()
+yesterday_mm = today_mm - datetime.timedelta(days=1)
+tomorrow_mm = today_mm + datetime.timedelta(days=1)
 
 # ၁။ Dictionary & Session State
 if 'lang' not in st.session_state:
@@ -140,12 +142,16 @@ if check_click:
             else:
                 d_from = d_to = sel_date
 
+            # Expanded Range for API call to handle timezone shifts
+            d_from_api = d_from - datetime.timedelta(days=1)
+            d_to_api = d_to + datetime.timedelta(days=1)
+
             l_code = league_codes[league]
             if l_code == "ALL":
                 target_codes = ",".join([v for k, v in league_codes.items() if v != "ALL"])
-                url = f"https://api.football-data.org/v4/matches?competitions={target_codes}&dateFrom={d_from}&dateTo={d_to}"
+                url = f"https://api.football-data.org/v4/matches?competitions={target_codes}&dateFrom={d_from_api}&dateTo={d_to_api}"
             else:
-                url = f"https://api.football-data.org/v4/competitions/{l_code}/matches?dateFrom={d_from}&dateTo={d_to}"
+                url = f"https://api.football-data.org/v4/competitions/{l_code}/matches?dateFrom={d_from_api}&dateTo={d_to_api}"
             
             headers = {'X-Auth-Token': token}
             response = requests.get(url, headers=headers)
@@ -156,20 +162,23 @@ if check_click:
             if matches:
                 h_set, a_set = set(), set()
                 for m in matches:
-                    h, a = m['homeTeam']['name'], m['awayTeam']['name']
-                    l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
+                    # Timezone Filtering Logic
                     utc_dt = datetime.datetime.strptime(m['utcDate'], "%Y-%m-%dT%H:%M:%SZ")
                     mm_dt = utc_dt + datetime.timedelta(hours=6, minutes=30)
-                    t_str = mm_dt.strftime("%H:%M")
-                    h_set.add(h)
-                    a_set.add(a)
-                    # Saving utc string to re-parse later for cache expiry logic
-                    st.session_state.display_matches.append({
-                        'time': t_str, 'home': h, 'away': a, 'league': l_display,
-                        'utc_str': m['utcDate']
-                    })
-                st.session_state.h_teams = sorted(list(h_set))
-                st.session_state.a_teams = sorted(list(a_set))
+                    
+                    # Only show matches that fall within the selected Myanmar date/range
+                    if d_from <= mm_dt.date() <= d_to:
+                        h, a = m['homeTeam']['name'], m['awayTeam']['name']
+                        l_display = league_name_map.get(m['competition']['name'], m['competition']['name'])
+                        t_str = mm_dt.strftime("%H:%M")
+                        h_set.add(h)
+                        a_set.add(a)
+                        st.session_state.display_matches.append({
+                            'time': t_str, 'home': h, 'away': a, 'league': l_display,
+                            'utc_str': m['utcDate']
+                        })
+                st.session_state.h_teams = sorted(list(h_set)) if h_set else ["No matches found"]
+                st.session_state.a_teams = sorted(list(a_set)) if a_set else ["No matches found"]
             else:
                 st.session_state.h_teams = ["No matches found"]
                 st.session_state.a_teams = ["No matches found"]
@@ -310,4 +319,4 @@ if gen_click:
             st.error(f"⚠️ {d[lang]['no_match']}")
     else:
         st.warning("Please select teams first!")
-
+            
